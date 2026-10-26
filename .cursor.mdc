@@ -1,0 +1,127 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Cursor Model Directive Configuration
+
+## Project Information
+```json
+{
+  "project_type": "expo_react_native",
+  "project_name": "ShaadiBazaar",
+  "framework_version": {
+    "expo": "50.0.0",
+    "react_native": "0.73.4"
+  }
+}
+```
+
+## AI Behavior Directives
+```json
+{
+  "version_checks": {
+    "priority": "high",
+    "check_first": true,
+    "immediate_report": true
+  },
+  "error_handling": {
+    "direct_approach": true,
+    "max_attempt_time": "10_minutes",
+    "escalate_if_complex": true
+  },
+  "code_style": {
+    "follow_existing": true,
+    "use_typescript": true,
+    "strict_typing": true
+  }
+}
+```
+
+## Response Guidelines
+```json
+{
+  "communication": {
+    "be_direct": true,
+    "admit_limitations": true,
+    "no_false_promises": true,
+    "clear_solutions": true
+  },
+  "problem_solving": {
+    "check_versions_first": true,
+    "identify_issues_immediately": true,
+    "provide_clear_steps": true,
+    "suggest_alternatives_if_stuck": true
+  }
+}
+```
+
+## Project Structure
+```json
+{
+  "required_directories": [
+    "app/(tabs)",
+    "components",
+    "constants",
+    "types",
+    "stores"
+  ],
+  "key_files": [
+    "app/_layout.tsx",
+    "types/router.ts",
+    "stores/wedding-store.ts"
+  ]
+}
+```
+
+## Version Compatibility
+```json
+{
+  "required_versions": {
+    "expo": "^50.0.0",
+    "react": "18.2.0",
+    "react-native": "0.73.4",
+    "expo-router": "~3.4.0",
+    "async-storage": "1.21.0"
+  },
+  "enforce_compatibility": true
+}
+```
+
+## Theme Configuration
+```json
+{
+  "colors": {
+    "primary": {
+      "maroon": "#800000",
+      "gold": "#FFD700",
+      "cream": "#FFF5E4",
+      "navy": "#001F3F"
+    },
+    "secondary": {
+      "saffron": "#FF6900",
+      "turquoise": "#00BFB3",
+      "peach": "#FFDAB9",
+      "charcoal": "#2C2C2C"
+    }
+  }
+}
+```
+
+## AI Performance Expectations
+```json
+{
+  "response_time": {
+    "version_checks": "immediate",
+    "error_identification": "fast",
+    "solution_proposal": "thorough"
+  },
+  "capabilities": {
+    "assess_honestly": true,
+    "no_false_modesty": true,
+    "escalate_when_needed": true
+  }
+}
+```
+
+

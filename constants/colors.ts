@@ -1,0 +1,46 @@
+const Colors = {
+  light: {
+    primary: "#800000",
+    secondary: "#FFD700",
+    background: "#FFF5E4",
+    headerBackground: "#001F3F",
+    alert: "#FF6900",
+    link: "#00BFB3",
+    softBackground: "#FFDAB9",
+    text: "#2C2C2C",
+    textLight: "#666666",
+    backgroundAlt: "#F9F9F9",
+    border: "#EEEEEE",
+    success: "#4CAF50",
+    error: "#F44336",
+    warning: "#FFC107",
+    info: "#2196F3",
+    shadow: "rgba(0, 0, 0, 0.1)",
+    white: "#FFFFFF",
+    favorite: "#FF6B6B",
+  },
+  dark: {
+    primary: "#B33030",
+    secondary: "#FFD700",
+    background: "#121212",
+    headerBackground: "#1E1E1E",
+    alert: "#FF8C42",
+    link: "#00D4C7",
+    softBackground: "#2D1F1F",
+    text: "#E0E0E0",
+    textLight: "#9E9E9E",
+    backgroundAlt: "#1E1E1E",
+    border: "#333333",
+    success: "#66BB6A",
+    error: "#EF5350",
+    warning: "#FFD54F",
+    info: "#42A5F5",
+    shadow: "rgba(0, 0, 0, 0.3)",
+    white: "#FFFFFF",
+    favorite: "#FF6B6B",
+  },
+};
+
+export type ThemeType = "light" | "dark";
+export type ThemeColors = typeof Colors.light;
+export default Colors;

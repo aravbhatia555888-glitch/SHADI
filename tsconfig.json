@@ -1,0 +1,69 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "ignoreDeprecations": "6.0",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "types": [
+      "jest",
+      "node"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "@constants/*": [
+        "./constants/*"
+      ],
+      "@config/*": [
+        "./config/*"
+      ],
+      "@types/*": [
+        "./types/*"
+      ],
+      "@stores/*": [
+        "./stores/*"
+      ],
+      "@styles/*": [
+        "./styles/*"
+      ],
+      "@screens/*": [
+        "./screens/*"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "e2e",
+    "supabase/functions"
+  ],
+  "extends": "expo/tsconfig.base"
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Decorative Border -->
+  <circle cx="100" cy="100" r="95" stroke="#800000" stroke-width="4"/>
+  <circle cx="100" cy="100" r="90" stroke="#FFD700" stroke-width="2"/>
+  
+  <!-- Mandala-inspired Pattern -->
+  <path d="M100 20C120 60 140 80 180 100C140 120 120 140 100 180C80 140 60 120 20 100C60 80 80 60 100 20Z" 
+        fill="#800000" fill-opacity="0.1" stroke="#800000" stroke-width="2"/>
+  
+  <!-- Central Design -->
+  <circle cx="100" cy="100" r="40" fill="#800000"/>
+  <circle cx="100" cy="100" r="35" fill="#FFD700"/>
+  
+  <!-- Text -->
+  <path d="M70 95 H130 M70 105 H130" stroke="#800000" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Decorative Elements -->
+  <circle cx="100" cy="70" r="5" fill="#800000"/>
+  <circle cx="100" cy="130" r="5" fill="#800000"/>
+  <circle cx="70" cy="100" r="5" fill="#800000"/>
+  <circle cx="130" cy="100" r="5" fill="#800000"/>
+</svg> 
