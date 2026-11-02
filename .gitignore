@@ -49,3 +49,9 @@ tsc_output.txt
 fix-vendor-store.js
 fix-vendor-store.ps1
 fix-vendor-store2.ps1
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Command Code local tooling
+.commandcode/
