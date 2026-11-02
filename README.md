@@ -6,18 +6,32 @@ ShaadiBazaar is a cross-platform mobile and web application built with **React N
 
 ---
 
+## 📌 Project Status
+
+The codebase builds and its tests pass, but it is **not deploy-ready out of the box** — the runtime is not configured and key flows have not been verified against a live backend.
+
+- ✅ `npm run typecheck`, `npm run lint` and `npm test` (334 tests) pass; `npm run build-web` exports successfully.
+- ⚠️ `.env` ships with **placeholder** Supabase credentials — the app cannot authenticate or load data until real values are set.
+- ⚠️ AI features require a deployed `ai-proxy` Edge Function and `EXPO_PUBLIC_AI_PROXY_URL`.
+- ⚠️ Payments require the Razorpay Edge Functions and keys.
+- ❌ Native iOS/Android builds and authenticated flows have **not** been tested on device.
+
+Run `node scripts/validate-codebase.js` and see `VALIDATION_REPORT.md` for the scoped status. `docs/UX_AUDIT.md` tracks UI/accessibility work; `docs/EXPERT_REVIEW.md` is superseded (see its correction notice).
+
+---
+
 ## 🚀 Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Framework | React Native + Expo SDK 50 |
+| Framework | React Native 0.86 + Expo SDK 57 (React 19) |
 | Routing | Expo Router (file-based) |
 | State Management | Zustand (with persistence) |
 | Backend | Supabase (Auth, Database, Realtime) |
 | Validation | Zod (runtime + compile-time) |
 | Styling | React Native StyleSheet |
 | Icons | Lucide React Native |
-| Testing | Jest + React Test Renderer |
+| Testing | Jest + React Native Testing Library |
 
 ---
 
@@ -25,7 +39,7 @@ ShaadiBazaar is a cross-platform mobile and web application built with **React N
 
 - **Node.js** >= 18 (recommended: 20.x)
 - **npm** or **yarn**
-- **Expo CLI** (`npm install -g expo-cli`)
+- **Expo CLI** — use `npx expo` (the standalone `expo-cli` package is deprecated)
 - A **Supabase** project (free tier works)
 
 ---

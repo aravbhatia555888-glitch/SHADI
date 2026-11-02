@@ -1,21 +1,21 @@
-# ShaadiBazaar Validation Report
+# Validation Report (superseded)
 
-Generated on: 2026-04-26T00:39:20.826Z
+This file was a stale copy that reported "100% — PRODUCTION READY" while the
+validator only checked that files existed and that `.env` *mentioned* the
+required variable names (placeholder values passed).
 
-## Validation Results
+That validator now detects placeholder credentials and no longer claims
+production readiness. The authoritative, regenerated report lives at the repo
+root:
 
-- **Required Files**: ✅ PASS
-- **Dependencies**: ✅ PASS
-- **Environment**: ✅ PASS
-- **API Implementations**: ✅ PASS
-- **Database Schema**: ✅ PASS
+- [`../VALIDATION_REPORT.md`](../VALIDATION_REPORT.md)
 
-## Overall Score: 100%
+Regenerate it any time with:
 
-🎉 **PRODUCTION READY!**
+```bash
+node scripts/validate-codebase.js
+```
 
-## Next Steps
-
-1. Configure Supabase credentials in .env
-2. Run database setup script
-3. Start your app: npm start
+The automated checks are static only. Deployment still requires real Supabase
+credentials, deployed Edge Functions, payment/AI/Sentry configuration, an EAS
+build, and end-to-end verification on device.

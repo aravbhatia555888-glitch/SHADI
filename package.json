@@ -21,7 +21,9 @@
     "e2e:build:android:release": "detox build --configuration android.emu.release",
     "e2e:test:android:release": "detox test --configuration android.emu.release",
     "web": "expo start --web",
-    "build-web": "expo export --platform web --output-dir dist --max-workers 1"
+    "build-web": "expo export --platform web --output-dir dist --max-workers 1",
+    "validate": "node scripts/validate-codebase.js",
+    "verify:live": "node scripts/verify-live.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

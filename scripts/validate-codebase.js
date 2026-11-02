@@ -76,45 +76,70 @@ function checkDependencies() {
   return allDepsInstalled;
 }
 
+// Parse KEY=VALUE pairs, ignoring comments and blank lines.
+function parseEnv(content) {
+  const env = {};
+  content.split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) return;
+    env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+  });
+  return env;
+}
+
+// A value that still looks like the shipped example is not configured. This is
+// the check that previously let placeholder credentials pass as "ready".
+function isPlaceholderValue(value) {
+  if (!value) return true;
+  const v = value.trim();
+  if (!v) return true;
+  return /your[-_]|yourproject|placeholder|example|changeme|xxxx|sk-proj-|^<.*>$/i.test(v);
+}
+
 // Check environment configuration
 function checkEnvironment() {
   console.log('\n🔧 Checking environment configuration...');
-  
+
   const envExamplePath = path.join(__dirname, '..', '.env.example');
   const envPath = path.join(__dirname, '..', '.env');
-  
+
   if (fs.existsSync(envExamplePath)) {
     console.log('✅ .env.example exists');
   } else {
     console.log('❌ .env.example missing');
     return false;
   }
-  
-  if (fs.existsSync(envPath)) {
-    console.log('✅ .env exists');
-    
-    // Check if .env has required variables
-    const envContent = fs.readFileSync(envPath, 'utf8');
-    const requiredVars = [
-      'EXPO_PUBLIC_SUPABASE_URL',
-      'EXPO_PUBLIC_SUPABASE_ANON_KEY'
-    ];
-    
-    let hasAllVars = true;
-    requiredVars.forEach(varName => {
-      if (envContent.includes(varName)) {
-        console.log(`✅ ${varName} configured`);
-      } else {
-        console.log(`⚠️  ${varName} not configured`);
-        hasAllVars = false;
-      }
-    });
-    
-    return hasAllVars;
-  } else {
+
+  if (!fs.existsSync(envPath)) {
     console.log('⚠️  .env not found (copy from .env.example)');
     return false;
   }
+
+  console.log('✅ .env exists');
+
+  const env = parseEnv(fs.readFileSync(envPath, 'utf8'));
+  const requiredVars = [
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY'
+  ];
+
+  let hasAllVars = true;
+  requiredVars.forEach(varName => {
+    const value = env[varName];
+    if (value === undefined) {
+      console.log(`❌ ${varName} missing`);
+      hasAllVars = false;
+    } else if (isPlaceholderValue(value)) {
+      console.log(`❌ ${varName} is still a placeholder — set a real value`);
+      hasAllVars = false;
+    } else {
+      console.log(`✅ ${varName} configured`);
+    }
+  });
+
+  return hasAllVars;
 }
 
 // Check API implementations
@@ -285,13 +310,12 @@ function checkSqlMigrations() {
 
 // Generate validation report
 function generateReport(results) {
-  console.log('\n📊 VALIDATION REPORT');
-  console.log('====================');
+  console.log('\n📊 CODEBASE CHECK');
+  console.log('=================');
   
-  const categories = [
+  const checks = [
     { name: 'Required Files', result: results.files },
     { name: 'Dependencies', result: results.dependencies },
-    { name: 'Environment', result: results.environment },
     { name: 'API Implementations', result: results.apis },
     { name: 'Database Schema', result: results.database },
     { name: 'SQL Migrations', result: results.migrations }
@@ -299,31 +323,40 @@ function generateReport(results) {
   
   let overallScore = 0;
   
-  categories.forEach(category => {
-    const status = category.result ? '✅ PASS' : '❌ FAIL';
-    console.log(`${category.name}: ${status}`);
-    if (category.result) overallScore++;
+  checks.forEach(check => {
+    console.log(`${check.name}: ${check.result ? '✅ PASS' : '❌ FAIL'}`);
+    if (check.result) overallScore++;
   });
   
-  const percentage = Math.round((overallScore / categories.length) * 100);
+  const percentage = Math.round((overallScore / checks.length) * 100);
   
-  console.log(`\nOverall Score: ${overallScore}/${categories.length} (${percentage}%)`);
+  // Environment is advisory: CI has no credentials and local devs may not have
+  // a real .env yet. A placeholder .env is reported clearly but never fails the
+  // code-consistency gate.
+  console.log(
+    `Environment: ${results.environment ? '✅ configured' : '⚠️  not configured (advisory — see above)'}`
+  );
+  
+  console.log(`\nCode checks passed: ${overallScore}/${checks.length} (${percentage}%)`);
+  console.log('\nℹ️  These are automated static checks only. They do NOT prove');
+  console.log('    production readiness — they confirm the files, dependencies,');
+  console.log('    APIs, schema and migration references are internally consistent.');
   
   if (percentage === 100) {
-    console.log('\n🎉 CONGRATULATIONS!');
-    console.log('Your ShaadiBazaar codebase is 100% ready for production!');
-    console.log('\n✅ All APIs implemented');
-    console.log('✅ All dependencies installed');
-    console.log('✅ Database schema complete');
-    console.log('✅ SQL migrations consistent');
-    console.log('✅ Environment configured');
-    console.log('✅ All files present');
-    console.log('\n🚀 Ready to deploy!');
+    console.log('\n✅ All automated codebase checks passed.');
   } else if (percentage >= 80) {
-    console.log('\n⚠️  Almost ready! Fix the remaining issues.');
+    console.log('\n⚠️  Almost there — fix the failing checks above.');
   } else {
-    console.log('\n❌ Needs work. Please fix the issues above.');
+    console.log('\n❌ Needs work — fix the failing checks above.');
   }
+  
+  console.log('\nManual steps before launch (NOT verifiable by this script):');
+  console.log('  1. Set real Supabase credentials in .env');
+  console.log('  2. Apply migrations and seed data to the Supabase project');
+  console.log('  3. Deploy Edge Functions (ai-proxy, razorpay, delete-user-account)');
+  console.log('  4. Configure EXPO_PUBLIC_AI_PROXY_URL, Razorpay keys and Sentry DSN');
+  console.log('  5. Build native apps with EAS and test on real iOS/Android devices');
+  console.log('  6. Exercise auth, booking, payment and chat flows end-to-end');
   
   return percentage;
 }
@@ -343,28 +376,37 @@ function runValidation() {
   
   // Create validation report file
   const reportPath = path.join(__dirname, '..', 'VALIDATION_REPORT.md');
-  const reportContent = `# ShaadiBazaar Validation Report
+  const reportContent = `# ShaadiBazaar Codebase Check
 
 Generated on: ${new Date().toISOString()}
 
-## Validation Results
+This report covers automated **static** checks only. A passing score is **not**
+a statement of production readiness.
+
+## Code Checks
 
 - **Required Files**: ${results.files ? '✅ PASS' : '❌ FAIL'}
 - **Dependencies**: ${results.dependencies ? '✅ PASS' : '❌ FAIL'}
-- **Environment**: ${results.environment ? '✅ PASS' : '❌ FAIL'}
 - **API Implementations**: ${results.apis ? '✅ PASS' : '❌ FAIL'}
 - **Database Schema**: ${results.database ? '✅ PASS' : '❌ FAIL'}
+- **SQL Migrations**: ${results.migrations ? '✅ PASS' : '❌ FAIL'}
 
-## Overall Score: ${score}%
+## Code Checks Passed: ${score}%
 
-${score === 100 ? '🎉 **PRODUCTION READY!**' : score >= 80 ? '⚠️ **ALMOST READY**' : '❌ **NEEDS WORK**'}
+${score === 100 ? '✅ All automated codebase checks passed.' : score >= 80 ? '⚠️ Almost there — fix the failing checks above.' : '❌ Needs work — fix the failing checks above.'}
 
-## Next Steps
+## Environment (advisory — does not fail the gate)
 
-${score === 100 
-  ? '1. Configure Supabase credentials in .env\n2. Run database setup script\n3. Start your app: npm start'
-  : '1. Fix the failing validation items above\n2. Re-run validation: node scripts/validate-codebase.js\n3. Repeat until 100% ready'
-}
+- **Environment**: ${results.environment ? '✅ configured' : '⚠️ NOT configured (placeholder or missing Supabase credentials)'}
+
+## Manual steps before launch (NOT verifiable by this script)
+
+1. Set real Supabase credentials in .env (placeholder values now fail the Environment check).
+2. Apply migrations and seed data to the Supabase project.
+3. Deploy Edge Functions (ai-proxy, razorpay checkout/verify, delete-user-account).
+4. Configure EXPO_PUBLIC_AI_PROXY_URL, Razorpay keys and Sentry DSN.
+5. Build native apps with EAS and test on real iOS/Android devices.
+6. Exercise auth, booking, payment and chat flows end-to-end.
 `;
   
   fs.writeFileSync(reportPath, reportContent, 'utf8');
