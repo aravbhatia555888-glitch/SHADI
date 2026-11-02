@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: Typography.fontSizes.lg,
     fontWeight: "600" as FontWeight,
-    color: "#FFFFFF",
+    color: Colors.light.white,
   },
   content: {
     flex: 1,

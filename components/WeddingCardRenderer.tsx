@@ -2,6 +2,7 @@ import type {
 WeddingCardData,
 WeddingCardTemplate,
 } from "@/types/wedding-card";
+import Colors from "@/constants/colors";
 import { Dimensions,StyleSheet,Text,View } from "react-native";
 
 interface WeddingCardRendererProps {
@@ -144,7 +145,7 @@ function createStyles(template: WeddingCardTemplate, scale: number) {
       overflow: "hidden",
       position: "relative",
       elevation: 8,
-      shadowColor: "#000",
+      shadowColor: Colors.light.shadowColor,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 8,

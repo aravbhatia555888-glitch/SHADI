@@ -6,7 +6,7 @@ import { useWeddingStore } from "@/stores/wedding-store";
 import { VendorBooking } from "@/schemas/wedding";
 import { format } from "date-fns";
 import { Stack, useRouter } from "expo-router";
-import { Calendar, XCircle } from "lucide-react-native";
+import { Calendar, AlertCircle, XCircle } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,7 +24,8 @@ export default function BookingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
-  const { bookings, loading, loadUserBookings, cancelBooking } = useBookingStore();
+  const { bookings, loading, error, loadUserBookings, cancelBooking } =
+    useBookingStore();
   const { vendors } = useWeddingStore();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -64,15 +65,35 @@ export default function BookingsScreen() {
   const getStatusBadge = (status: VendorBooking["status"]) => {
     switch (status) {
       case "confirmed":
-        return { label: "Confirmed", bg: "#ECFDF5", text: "#059669" };
+        return {
+          label: "Confirmed",
+          bg: Colors.light.statusSuccessBg,
+          text: Colors.light.statusSuccessText,
+        };
       case "pending":
-        return { label: "Pending", bg: "#FFFBEB", text: "#D97706" };
+        return {
+          label: "Pending",
+          bg: Colors.light.statusWarningBg,
+          text: Colors.light.statusWarningText,
+        };
       case "completed":
-        return { label: "Completed", bg: "#EFF6FF", text: "#2563EB" };
+        return {
+          label: "Completed",
+          bg: Colors.light.statusInfoBg,
+          text: Colors.light.statusInfoText,
+        };
       case "cancelled":
-        return { label: "Cancelled", bg: "#FEF2F2", text: "#DC2626" };
+        return {
+          label: "Cancelled",
+          bg: Colors.light.statusErrorBg,
+          text: Colors.light.statusErrorText,
+        };
       default:
-        return { label: status, bg: "#F3F4F6", text: "#4B5563" };
+        return {
+          label: status,
+          bg: Colors.light.statusNeutralBg,
+          text: Colors.light.statusNeutralText,
+        };
     }
   };
 
@@ -113,7 +134,7 @@ export default function BookingsScreen() {
           {item.advanceAmount ? (
             <View style={styles.priceItem}>
               <Text style={styles.priceLabel}>Advance Paid</Text>
-              <Text style={[styles.priceValue, { color: "#059669" }]}>
+              <Text style={[styles.priceValue, { color: Colors.light.success }]}>
                 ₹{item.advanceAmount.toLocaleString("en-IN")}
               </Text>
             </View>
@@ -131,6 +152,8 @@ export default function BookingsScreen() {
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => handleCancelBooking(item.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Cancel booking with ${vendorName}`}
             >
               <XCircle size={16} color={Colors.light.error} />
               <Text style={styles.cancelButtonText}>Cancel Booking</Text>
@@ -155,6 +178,22 @@ export default function BookingsScreen() {
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={Colors.light.primary} />
           </View>
+        ) : error && bookings.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <AlertCircle size={64} color={Colors.light.error} />
+            <Text style={styles.emptyTitle}>Couldn't Load Bookings</Text>
+            <Text style={styles.emptySubtitle}>{error}</Text>
+            <TouchableOpacity
+              style={styles.browseButton}
+              onPress={() => {
+                if (user?.id) loadUserBookings(user.id);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading bookings"
+            >
+              <Text style={styles.browseButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : bookings.length === 0 ? (
           <View style={styles.centerContainer}>
             <Calendar size={64} color={Colors.light.textLight} />
@@ -165,6 +204,8 @@ export default function BookingsScreen() {
             <TouchableOpacity
               style={styles.browseButton}
               onPress={() => router.push("/(tabs)/vendors")}
+              accessibilityRole="button"
+              accessibilityLabel="Browse vendors"
             >
               <Text style={styles.browseButtonText}>Browse Vendors</Text>
             </TouchableOpacity>
@@ -216,12 +257,15 @@ const styles = StyleSheet.create({
   },
   browseButton: {
     backgroundColor: Colors.light.primary,
+    minHeight: 44,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   browseButtonText: {
-    color: "#fff",
+    color: Colors.light.background,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -285,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   priceLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.textLight,
     marginBottom: 2,
   },
@@ -305,9 +349,10 @@ const styles = StyleSheet.create({
   cancelButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    minHeight: 44,
+    paddingHorizontal: 12,
   },
   cancelButtonText: {
     fontSize: 13,

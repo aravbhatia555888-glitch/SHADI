@@ -35,8 +35,8 @@ useState,
 } from "react";
 import {
 ActivityIndicator,
+Alert,
 Animated,
-Dimensions,
 Image,
 ImageStyle,
 Modal,
@@ -49,7 +49,11 @@ TouchableOpacity,
 View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
+function normalizeDateValue(value?: string) {
+  if (!value) return "";
+  const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : value;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -86,6 +90,7 @@ export default function ProfileScreen() {
     weddingLocation: weddingDetails?.weddingLocation || "",
   });
   const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [menuModalVisible, setMenuModalVisible] = useState(false);
 
@@ -171,6 +176,7 @@ export default function ProfileScreen() {
           onPress={() => setMenuModalVisible(true)}
           accessibilityRole="button"
           accessibilityLabel="Open menu"
+          hitSlop={8}
         >
           <Menu size={22} color={Colors.light.background} />
         </TouchableOpacity>
@@ -178,16 +184,15 @@ export default function ProfileScreen() {
     });
   }, [navigation]);
 
-  // Update edit details when wedding details load
-  useEffect(() => {
-    if (weddingDetails) {
-      setEditDetails({
-        coupleName: weddingDetails.coupleName || "",
-        weddingDate: weddingDetails.weddingDate || "",
-        weddingLocation: weddingDetails.weddingLocation || "",
-      });
-    }
-  }, [weddingDetails]);
+  const openEditModal = () => {
+    setEditDetails({
+      coupleName: weddingDetails?.coupleName || "",
+      weddingDate: normalizeDateValue(weddingDetails?.weddingDate),
+      weddingLocation: weddingDetails?.weddingLocation || "",
+    });
+    setEditError(null);
+    setEditModalVisible(true);
+  };
 
   const handlePickImage = async () => {
     if (!user?.id) {
@@ -237,9 +242,27 @@ export default function ProfileScreen() {
   };
 
   const handleEditDetails = async () => {
+    if (!editDetails.coupleName.trim()) {
+      setEditError("Enter the couple's names.");
+      return;
+    }
+
+    const dateValue = editDetails.weddingDate.trim();
+    if (dateValue) {
+      const validFormat = /^\d{4}-\d{2}-\d{2}$/.test(dateValue);
+      const parsed = validFormat ? new Date(`${dateValue}T00:00:00`) : null;
+      if (!parsed || Number.isNaN(parsed.getTime())) {
+        setEditError("Enter the wedding date as YYYY-MM-DD.");
+        return;
+      }
+    }
+
+    setEditError(null);
     setSaving(true);
     const result = await setWeddingDetails({
       ...editDetails,
+      coupleName: editDetails.coupleName.trim(),
+      weddingLocation: editDetails.weddingLocation.trim(),
       totalBudget: weddingDetails?.totalBudget || 0,
     });
     setSaving(false);
@@ -249,9 +272,7 @@ export default function ProfileScreen() {
         .getState()
         .showToast("Wedding details updated!", "success");
     } else {
-      useToastStore
-        .getState()
-        .showToast(result.error || "Failed to update wedding details", "error");
+      setEditError(result.error || "Could not save your changes. Try again.");
     }
   };
 
@@ -263,9 +284,24 @@ export default function ProfileScreen() {
     else if (id === "help") router.push("/help");
     else if (id === "vendor-dashboard") router.push("/vendor-dashboard");
     else if (id === "logout") {
-      await logout();
-      trackEvent(AnalyticsEvents.SIGN_OUT);
-      router.replace("/auth/login");
+      setTimeout(() => {
+        Alert.alert(
+          "Log Out",
+          "Log out of ShaadiBazaar? Your saved planning data stays in your account.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Log Out",
+              style: "destructive",
+              onPress: async () => {
+                await logout();
+                trackEvent(AnalyticsEvents.SIGN_OUT);
+                router.replace("/auth/login");
+              },
+            },
+          ]
+        );
+      }, 300);
     }
   };
 
@@ -335,7 +371,7 @@ export default function ProfileScreen() {
         title: "Checklist",
         subtitle: `${completedTasksCount}/${checklistItems.length} done`,
         icon: ListChecks,
-        color: "#4F46E5",
+        color: Colors.light.accentIndigo,
         onPress: () => router.push("/(tabs)/checklist"),
       },
       {
@@ -343,7 +379,7 @@ export default function ProfileScreen() {
         title: "Budget",
         subtitle: `${budgetPercentage}% spent`,
         icon: IndianRupee,
-        color: "#059669",
+        color: Colors.light.accentEmerald,
         onPress: () => router.push("/budget"),
       },
       {
@@ -351,7 +387,7 @@ export default function ProfileScreen() {
         title: "Favorites",
         subtitle: `${favoriteVendors.length} vendors`,
         icon: Heart,
-        color: "#DC2626",
+        color: Colors.light.accentRed,
         onPress: handleFavoritesPress,
       },
       {
@@ -359,7 +395,7 @@ export default function ProfileScreen() {
         title: "Messages",
         subtitle: "Chat with vendors",
         icon: MessageCircle,
-        color: "#D97706",
+        color: Colors.light.accentAmber,
         onPress: () => router.push("/(tabs)/messages"),
       },
     ],
@@ -397,6 +433,7 @@ export default function ProfileScreen() {
                   disabled={imageLoading}
                   accessibilityRole="button"
                   accessibilityLabel="Change profile picture"
+                  hitSlop={12}
                 >
                   <Camera size={12} color={Colors.light.background} />
                 </TouchableOpacity>
@@ -421,7 +458,7 @@ export default function ProfileScreen() {
             </View>
             <TouchableOpacity
               style={styles.heroEditButton}
-              onPress={() => setEditModalVisible(true)}
+              onPress={openEditModal}
               accessibilityRole="button"
               accessibilityLabel="Edit wedding details"
             >
@@ -456,7 +493,15 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.heroProgressBar}>
               <View
-                style={[styles.heroProgressFill, { width: `${budgetPercentage}%` }]}
+                style={[
+                  styles.heroProgressFill,
+                  {
+                    width: `${Math.min(
+                      100,
+                      Math.max(0, budgetPercentage)
+                    )}%`,
+                  },
+                ]}
               />
             </View>
           </View>
@@ -528,6 +573,8 @@ export default function ProfileScreen() {
                       })
                     }
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View favorite vendor ${vendor.name}`}
                   >
                     <Image
                       source={{ uri: vendor.coverImage }}
@@ -616,50 +663,87 @@ export default function ProfileScreen() {
         onRequestClose={() => setEditModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContent} accessibilityViewIsModal>
             <Text style={styles.modalTitle}>Edit Wedding Details</Text>
+
+            <Text style={styles.fieldLabel}>Couple names</Text>
             <TextInput
               style={styles.input}
-              placeholder="Couple Name"
+              placeholder="e.g., Aarav & Priya"
               value={editDetails.coupleName}
-              onChangeText={(text) =>
-                setEditDetails((d) => ({ ...d, coupleName: text }))
-              }
+              onChangeText={(text) => {
+                setEditDetails((d) => ({ ...d, coupleName: text }));
+                if (editError) setEditError(null);
+              }}
               placeholderTextColor={Colors.light.textLight}
+              autoComplete="name"
+              textContentType="name"
+              accessibilityLabel="Couple names"
             />
+
+            <Text style={styles.fieldLabel}>Wedding date</Text>
             <TextInput
               style={styles.input}
-              placeholder="Wedding Date (YYYY-MM-DD)"
+              placeholder="YYYY-MM-DD"
               value={editDetails.weddingDate}
-              onChangeText={(text) =>
-                setEditDetails((d) => ({ ...d, weddingDate: text }))
-              }
+              onChangeText={(text) => {
+                setEditDetails((d) => ({ ...d, weddingDate: text }));
+                if (editError) setEditError(null);
+              }}
               placeholderTextColor={Colors.light.textLight}
+              keyboardType="numbers-and-punctuation"
+              maxLength={10}
+              accessibilityLabel="Wedding date in YYYY-MM-DD format"
             />
+
+            <Text style={styles.fieldLabel}>Wedding location</Text>
             <TextInput
               style={styles.input}
-              placeholder="Wedding Location"
+              placeholder="e.g., Jaipur, Rajasthan"
               value={editDetails.weddingLocation}
-              onChangeText={(text) =>
-                setEditDetails((d) => ({ ...d, weddingLocation: text }))
-              }
+              onChangeText={(text) => {
+                setEditDetails((d) => ({ ...d, weddingLocation: text }));
+                if (editError) setEditError(null);
+              }}
               placeholderTextColor={Colors.light.textLight}
+              autoComplete="street-address"
+              textContentType="fullStreetAddress"
+              accessibilityLabel="Wedding location"
             />
+
+            {editError ? (
+              <Text
+                style={styles.editError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {editError}
+              </Text>
+            ) : null}
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={() => setEditModalVisible(false)}
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditError(null);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Cancel editing"
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalSaveButton]}
+                style={[
+                  styles.modalButton,
+                  styles.modalSaveButton,
+                  saving && styles.modalButtonDisabled,
+                ]}
                 onPress={handleEditDetails}
                 disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel="Save wedding details"
+                accessibilityState={{ disabled: saving, busy: saving }}
               >
                 <Text style={styles.modalSaveText}>
                   {saving ? "Saving..." : "Save"}
@@ -808,12 +892,14 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.75)",
   },
   heroEditButton: {
-    paddingVertical: 5,
+    minHeight: 44,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
     backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroEditText: {
     fontSize: 11,
@@ -893,7 +979,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickActionItem: {
-    width: (width - 40) / 4,
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: 64,
+    maxWidth: 120,
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 4,
@@ -1093,13 +1182,25 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 10,
     padding: Platform.OS === "ios" ? 14 : 12,
     marginBottom: 12,
+    minHeight: 48,
     fontSize: 14,
     color: Colors.light.text,
     backgroundColor: Colors.light.backgroundAlt,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "500" as FontWeight,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  editError: {
+    fontSize: 14,
+    color: Colors.light.error,
+    marginBottom: 8,
   },
   modalActions: {
     flexDirection: "row",
@@ -1122,6 +1223,9 @@ const styles = StyleSheet.create({
   },
   modalSaveButton: {
     backgroundColor: Colors.light.primary,
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
   modalSaveText: {
     fontSize: 14,

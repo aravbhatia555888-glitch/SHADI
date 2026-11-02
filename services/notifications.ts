@@ -1,4 +1,5 @@
 import { supabase } from "@/config/supabase";
+import Colors from "@/constants/colors";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
@@ -42,7 +43,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       name: "ShaadiBazaar",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#800000",
+      lightColor: Colors.light.primary,
     });
   }
 

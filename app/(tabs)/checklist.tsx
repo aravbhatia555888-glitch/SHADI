@@ -4,6 +4,7 @@ import DatePicker from "@/components/DatePicker";
 import Colors from "@/constants/colors";
 import Typography from "@/constants/typography";
 import { ChecklistItem as ChecklistItemType } from "@/schemas/wedding";
+import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { hapticSuccess } from "@/utils/haptics";
@@ -17,6 +18,7 @@ useRef,
 useState,
 } from "react";
 import {
+ActivityIndicator,
 Animated,
 FlatList,
 Modal,
@@ -84,9 +86,13 @@ export default function ChecklistScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const { generated } = useLocalSearchParams<{ generated?: string }>();
+  const { user } = useAuthStore();
   const {
     checklistItems,
     weddingDetails,
+    loading,
+    error,
+    initialize,
     updateChecklistItem,
     addChecklistItem,
   } = useWeddingStore();
@@ -266,13 +272,27 @@ export default function ChecklistScreen() {
   };
 
   const resetFilters = () => {
+    setFilter("All");
+    setSort("Due Date");
+    setSelectedCategory(null);
     setTempFilter("All");
     setTempSort("Due Date");
     setTempCategory(null);
+    setFilterModalVisible(false);
   };
 
-  const handleToggleItem = (id: string, completed: boolean) => {
-    updateChecklistItem(id, completed);
+  const handleToggleItem = async (id: string, completed: boolean) => {
+    const result = await updateChecklistItem(id, completed);
+    if (!result.success) {
+      useToastStore
+        .getState()
+        .showToast(
+          result.error || "Could not save the task. Try again.",
+          "error"
+        );
+      return false;
+    }
+    return true;
   };
 
   const handleAddTask = async () => {
@@ -366,9 +386,27 @@ export default function ChecklistScreen() {
     );
   };
 
+  const retryLoad = () => {
+    if (user?.id) initialize(user.id);
+  };
+
   return (
     <View style={styles.container}>
-      {renderProgressBar()}
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={retryLoad}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading tasks"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        renderProgressBar()
+      )}
 
       <FlatList
         data={filteredItems}
@@ -378,14 +416,22 @@ export default function ChecklistScreen() {
         )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No tasks found</Text>
-            <Text style={styles.emptySubtext}>
-              {filter === "All"
-                ? "Add your first task to get started"
-                : `No ${filter.toLowerCase()} tasks`}
-            </Text>
-          </View>
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+            </View>
+          ) : error ? null : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No tasks found</Text>
+              <Text style={styles.emptySubtext}>
+                {selectedCategory
+                  ? `No tasks in ${selectedCategory}`
+                  : filter === "All"
+                  ? "Add your first task to get started"
+                  : `No ${filter.toLowerCase()} tasks`}
+              </Text>
+            </View>
+          )
         }
       />
 
@@ -700,17 +746,17 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
   headerFilterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
@@ -721,9 +767,9 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
     backgroundColor: Colors.light.error,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -731,7 +777,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.headerBackground,
   },
   headerFilterBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 14,
     fontWeight: "700",
     color: Colors.light.background,
   },
@@ -768,7 +815,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: "100%",
-    backgroundColor: Colors.light.success,
+    backgroundColor: Colors.light.successOnDark,
     borderRadius: 2.5,
   },
   statsRow: {
@@ -785,13 +832,13 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: Colors.light.success,
+    backgroundColor: Colors.light.successOnDark,
   },
   statDotPending: {
     backgroundColor: "rgba(255, 255, 255, 0.5)",
   },
   statText: {
-    fontSize: 11,
+    fontSize: 12,
     color: "rgba(255, 255, 255, 0.85)",
     fontWeight: "500",
   },
@@ -816,18 +863,18 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.light.error,
+    backgroundColor: Colors.light.errorOnDark,
   },
   statPillDotWarning: {
-    backgroundColor: Colors.light.warning,
+    backgroundColor: Colors.light.warningOnDark,
   },
   statPillText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "600",
-    color: Colors.light.error,
+    color: Colors.light.errorOnDark,
   },
   statPillTextWarning: {
-    color: Colors.light.warning,
+    color: Colors.light.warningOnDark,
   },
   filterSection: {
     marginBottom: 24,
@@ -849,7 +896,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
   },
   activeFilterOptionButton: {
     backgroundColor: Colors.light.primary,
@@ -873,6 +920,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
     marginTop: 40,
+  },
+  loadingContainer: {
+    paddingVertical: 48,
+    alignItems: "center",
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    margin: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
+    backgroundColor: Colors.light.backgroundAlt,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.light.text,
+  },
+  retryButton: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  retryText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: "600",
+    color: Colors.light.primary,
   },
   emptyText: {
     fontSize: Typography.fontSizes.lg,
@@ -920,9 +997,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.light.backgroundAlt,
     alignItems: "center",
     justifyContent: "center",
@@ -938,7 +1015,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 12,
     padding: Platform.OS === "ios" ? 14 : 12,
     fontSize: Typography.fontSizes.md,
@@ -953,7 +1030,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 12,
     backgroundColor: Colors.light.backgroundAlt,
@@ -976,22 +1053,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     alignItems: "center",
   },
   activePriorityButton: {
     borderColor: Colors.light.primary,
   },
   highPriority: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: Colors.light.priorityHighBg,
     borderColor: Colors.light.error,
   },
   mediumPriority: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: Colors.light.priorityMediumBg,
     borderColor: Colors.light.warning,
   },
   lowPriority: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: Colors.light.priorityLowBg,
     borderColor: Colors.light.info,
   },
   priorityText: {

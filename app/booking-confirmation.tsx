@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFF5F0",
+    backgroundColor: Colors.light.surfaceSoft,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   nextSteps: {
     width: "100%",
-    backgroundColor: "#FFF5F0",
+    backgroundColor: Colors.light.surfaceSoft,
     borderRadius: 12,
     padding: 20,
     marginTop: 8,

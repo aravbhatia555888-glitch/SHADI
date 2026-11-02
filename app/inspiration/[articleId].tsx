@@ -418,7 +418,7 @@ export default function ArticleDetailScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <ChevronLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
+              <ChevronLeft size={24} color={Colors.light.white} strokeWidth={1.5} />
             </TouchableOpacity>
           ),
           headerRight: () => (
@@ -427,7 +427,7 @@ export default function ArticleDetailScreen() {
                 onPress={handleShare}
                 style={styles.headerAction}
               >
-                <Share2 size={20} color="#FFFFFF" strokeWidth={1.5} />
+                <Share2 size={20} color={Colors.light.white} strokeWidth={1.5} />
               </TouchableOpacity>
             </View>
           ),
@@ -775,8 +775,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   favoriteActive: {
-    backgroundColor: "#FF6B6B",
-    borderColor: "#FF6B6B",
+    backgroundColor: Colors.light.favorite,
+    borderColor: Colors.light.favorite,
   },
   bookmarkButton: {
     borderColor: Colors.light.primary,
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   backToListText: {
-    color: "#FFFFFF",
+    color: Colors.light.white,
     fontSize: Typography.fontSizes.md,
     fontWeight: "600" as FontWeight,
   },
