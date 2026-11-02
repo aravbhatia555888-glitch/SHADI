@@ -31,6 +31,7 @@ The SQL files live at the **repo root**. Apply them in this exact order via the 
 | 23 | `supabase-sample-data.sql` | Demo vendors only — **never run in production** |
 | 24 | `supabase-wedding-culture-migration.sql` | Adds `culture` to wedding_details (set during onboarding) |
 | 25 | `supabase-user-roles-migration.sql` | Adds `role` (couple / vendor / explorer) to profiles |
+| 26 | `supabase-vendor-approval-migration.sql` | Adds `is_approved` and blocks unapproved vendors from publishing |
 
 ## Notes
 

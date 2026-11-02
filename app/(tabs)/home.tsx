@@ -6,9 +6,11 @@ import HomeHeader from "@/components/home/HomeHeader";
 import InspirationPreview from "@/components/home/InspirationPreview";
 import QuickActions from "@/components/home/QuickActions";
 import RecentActivity from "@/components/home/RecentActivity";
+import RoleHome from "@/components/home/RoleHome";
 import WeddingProgress from "@/components/home/WeddingProgress";
 import Colors from "@/constants/colors";
 import { BudgetItem,ChecklistItem as ChecklistItemType,Vendor } from "@/schemas/wedding";
+import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { useNavigation,useRouter } from "expo-router";
@@ -33,6 +35,7 @@ type Priority = "high" | "medium" | "low";
 export default function HomeScreen() {
   const router = useRouter();
   const navigation = useNavigation();
+  const { user } = useAuthStore();
   const {
     weddingDetails,
     vendors,
@@ -387,6 +390,10 @@ export default function HomeScreen() {
   };
 
   const keyExtractor = (item: Section) => item;
+
+  if (user && (user.role === "vendor" || user.role === "explorer")) {
+    return <RoleHome role={user.role} />;
+  }
 
   return (
     <View style={styles.container}>

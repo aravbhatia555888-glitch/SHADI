@@ -69,6 +69,13 @@ interface WeddingState {
     description: string;
     startingPrice: number;
   }) => Promise<{ success: boolean; error?: string }>;
+  myVendor: {
+    id: string;
+    name: string;
+    isApproved: boolean;
+    isAvailable: boolean;
+  } | null;
+  loadMyVendor: () => Promise<void>;
   hasMoreVendors: boolean;
   currentVendorPage: number;
   /** @deprecated Use vendor-store instead for vendor favorites. */
@@ -135,6 +142,7 @@ export const useWeddingStore = create<WeddingState>()(
 
       weddingDetails: null,
       vendors: [],
+      myVendor: null,
       favoriteVendors: [],
       favoriteArticles: [],
       checklistItems: [],
@@ -440,6 +448,47 @@ export const useWeddingStore = create<WeddingState>()(
           return { success: true };
         } catch (error) {
           return { success: false, error: handleSupabaseError(error) };
+        }
+      },
+
+      loadMyVendor: async () => {
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) {
+            set({ myVendor: null });
+            return;
+          }
+
+          const { data, error } = await supabase
+            .from("vendors")
+            .select("id, name, is_approved, is_available")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (error) {
+            if (__DEV__) console.warn("Failed to load own vendor:", error);
+            set({ myVendor: null });
+            return;
+          }
+
+          if (data) {
+            set({
+              myVendor: {
+                id: data.id,
+                name: data.name,
+                isApproved: data.is_approved === true,
+                isAvailable: data.is_available === true,
+              },
+            });
+          } else {
+            set({ myVendor: null });
+          }
+        } catch (error) {
+          if (__DEV__) console.warn("Error loading own vendor:", error);
         }
       },
 
@@ -1156,6 +1205,7 @@ export const useWeddingStore = create<WeddingState>()(
         get().unsubscribeFromChanges();
         set({
           weddingDetails: null,
+          myVendor: null,
           favoriteVendors: [],
           favoriteArticles: [],
           checklistItems: [],

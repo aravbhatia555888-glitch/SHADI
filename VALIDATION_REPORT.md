@@ -1,6 +1,6 @@
 # ShaadiBazaar Codebase Check
 
-Generated on: 2026-11-02T12:46:26.119Z
+Generated on: 2026-11-02T12:51:24.709Z
 
 This report covers automated **static** checks only. A passing score is **not**
 a statement of production readiness.
