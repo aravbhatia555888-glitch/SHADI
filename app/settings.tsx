@@ -9,8 +9,10 @@ import { ChevronLeft,Globe,Lock,Trash2,X } from "lucide-react-native";
 import { useState } from "react";
 import {
 Alert,
+KeyboardAvoidingView,
 Linking,
 Modal,
+Platform,
 ScrollView,
 StyleSheet,
 Text,
@@ -176,7 +178,15 @@ export default function SettingsScreen() {
         onRequestClose={closePasswordModal}
       >
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={styles.modalKeyboard}
+          >
           <View style={styles.modalContent} accessibilityViewIsModal>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Change Password</Text>
               <TouchableOpacity
@@ -257,7 +267,9 @@ export default function SettingsScreen() {
               disabled={loading}
               style={styles.modalButton}
             />
+            </ScrollView>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -332,12 +344,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
+  modalKeyboard: {
+    width: "100%",
+  },
   modalContent: {
     backgroundColor: Colors.light.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
     paddingBottom: 40,
+    maxHeight: "90%",
   },
   modalHeader: {
     flexDirection: "row",

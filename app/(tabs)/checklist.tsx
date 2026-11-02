@@ -9,7 +9,7 @@ import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { hapticSuccess } from "@/utils/haptics";
 import { useLocalSearchParams,useNavigation,useRouter } from "expo-router";
-import { Filter,Plus,Sparkles,X } from "lucide-react-native";
+import { Filter,Plus,Sparkles,Trash2,X } from "lucide-react-native";
 import {
 useEffect,
 useLayoutEffect,
@@ -18,6 +18,7 @@ useRef,
 useState,
 } from "react";
 import {
+Alert,
 ActivityIndicator,
 Animated,
 FlatList,
@@ -95,6 +96,7 @@ export default function ChecklistScreen() {
     initialize,
     updateChecklistItem,
     addChecklistItem,
+    deleteChecklistItem,
   } = useWeddingStore();
   const appliedGeneratedRef = useRef(false);
 
@@ -295,6 +297,30 @@ export default function ChecklistScreen() {
     return true;
   };
 
+  const confirmDeleteItem = (item: ChecklistItemType) => {
+    Alert.alert(
+      "Delete task",
+      `Delete "${item.title}"? This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const result = await deleteChecklistItem(item.id);
+            if (result.success) {
+              hapticSuccess();
+            } else {
+              useToastStore
+                .getState()
+                .showToast(result.error || "Could not delete the task.", "error");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleAddTask = async () => {
     setAdding(true);
     const result = await addChecklistItem({
@@ -412,7 +438,20 @@ export default function ChecklistScreen() {
         data={filteredItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <ChecklistItem item={item} onToggle={handleToggleItem} />
+          <View style={styles.itemRow}>
+            <View style={styles.itemRowContent}>
+              <ChecklistItem item={item} onToggle={handleToggleItem} />
+            </View>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => confirmDeleteItem(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete task ${item.title}`}
+              hitSlop={8}
+            >
+              <Trash2 size={18} color={Colors.light.textLight} />
+            </TouchableOpacity>
+          </View>
         )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
@@ -913,6 +952,20 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.background,
+  },
+  itemRowContent: {
+    flex: 1,
+  },
+  deleteButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyContainer: {
     flex: 1,

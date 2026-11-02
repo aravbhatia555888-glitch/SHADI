@@ -51,17 +51,21 @@ This is not a claim of full WCAG conformance. Authenticated screens were not ren
 
 ## Open
 
-- 22 hardcoded hex colors remain in 7 screens: `bookings.tsx` (5), `inspiration/[articleId].tsx` (5), `profile.tsx` (4), `checklist.tsx` (3), `notifications.tsx` (2), `booking-confirmation.tsx` (2), `help.tsx` (1). Some are legitimate overlays; the rest should become tokens.
 - 103 status-color usages across 34 files need per-screen review for meaning conveyed by color alone.
 - Several forms outside the audited set still use `Colors.light.border` for field boundaries. Apply `inputBorder` systematically.
-- Checklist and budget expose no delete affordance even though `deleteChecklistItem` and `deleteBudgetExpense` exist in the store. AI checklist import also reports only successes and has no undo.
-- The profile screen renders the same five navigation items twice: inline and in the header menu.
+- Budget exposes no delete affordance even though `deleteBudgetExpense` exists in the store. AI checklist import also reports only successes and has no undo.
 - Recent Activity task rows navigate to the checklist list, not the selected task.
 - Store `loading` is global rather than per-slice, so a retry spinner can cover unrelated operations.
-- The Settings password modal is not wrapped in keyboard-avoiding or scrollable content; with the keyboard open on a short screen, the submit button can be obscured.
 - No dark theme exists. The control was removed rather than left non-functional.
 - Native iOS and Android rendering, gestures, and device-specific safe areas were not tested in this pass.
 - Authenticated screens (home, vendors, checklist, budget, messages, profile, booking, payments) were source-audited but not rendered.
+
+## Resolved since this audit
+
+- All hardcoded hex colors replaced with design tokens in `constants/colors.ts`.
+- Checklist rows now expose a delete action (`deleteChecklistItem`) with a confirm step, placed outside the row's accessible element.
+- Profile no longer renders the navigation list twice (the header menu modal was removed; the inline list remains).
+- Settings password modal is wrapped in keyboard-avoiding, scrollable content.
 
 ## Verification
 

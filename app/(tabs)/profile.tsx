@@ -7,7 +7,7 @@ import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
 import { hapticSelection } from "@/utils/haptics";
-import { type Href, useFocusEffect, useNavigation, useRouter } from "expo-router";
+import { type Href, useFocusEffect, useRouter } from "expo-router";
 import {
 Bell,
 Calendar,
@@ -20,7 +20,6 @@ LayoutDashboard,
 ListChecks,
 LogOut,
 MapPin,
-Menu,
 MessageCircle,
 Settings,
 Star
@@ -28,7 +27,6 @@ Star
 import React,{
 useCallback,
 useEffect,
-useLayoutEffect,
 useMemo,
 useRef,
 useState,
@@ -57,7 +55,6 @@ function normalizeDateValue(value?: string) {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const { user, logout } = useAuthStore();
   const {
     weddingDetails,
@@ -92,7 +89,6 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
-  const [menuModalVisible, setMenuModalVisible] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -167,22 +163,6 @@ export default function ProfileScreen() {
       loadData();
     }, [loadData])
   );
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          style={styles.headerMenuButton}
-          onPress={() => setMenuModalVisible(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Open menu"
-          hitSlop={8}
-        >
-          <Menu size={22} color={Colors.light.background} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
 
   const openEditModal = () => {
     setEditDetails({
@@ -277,7 +257,6 @@ export default function ProfileScreen() {
   };
 
   const handleMenuAction = async (id: string) => {
-    setMenuModalVisible(false);
     if (id === "bookings") router.push("/bookings" as unknown as Href);
     else if (id === "settings") router.push("/settings");
     else if (id === "notifications") router.push("/notifications");
@@ -754,51 +733,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Menu Modal */}
-      <Modal
-        visible={menuModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setMenuModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.menuModalOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuModalVisible(false)}
-        >
-          <View style={styles.menuModalContent}>
-            {MENU_ITEMS.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.menuModalItem,
-                  index === MENU_ITEMS.length - 1 && styles.menuModalItemLast,
-                ]}
-                onPress={() => handleMenuAction(item.id)}
-                accessibilityRole="button"
-                accessibilityLabel={item.title}
-              >
-                <View style={styles.menuModalItemLeft}>
-                  <item.icon size={20} color={item.color} strokeWidth={1.5} />
-                  <Text
-                    style={[
-                      styles.menuModalItemText,
-                      item.id === "logout" && styles.menuModalLogoutText,
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                </View>
-                <ChevronRight
-                  size={16}
-                  color={Colors.light.textLight}
-                  strokeWidth={1.5}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
@@ -810,10 +744,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  headerMenuButton: {
-    marginRight: 16,
-    padding: 4,
   },
 
   // Hero Section (compact, dark blue)
@@ -1231,50 +1161,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600" as FontWeight,
     color: Colors.light.background,
-  },
-
-  // Menu Modal
-  menuModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    paddingTop: 60,
-    paddingRight: 16,
-  },
-  menuModalContent: {
-    backgroundColor: Colors.light.background,
-    borderRadius: 12,
-    minWidth: 200,
-    shadowColor: Colors.light.text,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  menuModalItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  menuModalItemLast: {
-    borderBottomWidth: 0,
-  },
-  menuModalItemLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  menuModalItemText: {
-    fontSize: 14,
-    fontWeight: "500" as FontWeight,
-    color: Colors.light.text,
-  },
-  menuModalLogoutText: {
-    color: Colors.light.error,
   },
 });
