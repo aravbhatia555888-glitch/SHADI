@@ -88,6 +88,7 @@ export interface CallAIMessage {
 }
 
 export interface CallAIRequest {
+  feature?: AIFeature;
   model?: string;
   messages: CallAIMessage[];
   temperature?: number;
@@ -113,7 +114,7 @@ export async function callAI(request: CallAIRequest): Promise<CallAIResponse> {
 
     const { data, error } = await supabase.functions.invoke("ai-proxy", {
       body: {
-        feature: "wedding-planner",
+        feature: request.feature ?? "wedding-planner",
         prompt,
         context: {},
         systemPrompt: systemMessage?.content || "",
@@ -244,49 +245,47 @@ export async function getAICredits(): Promise<{
 }
 
 /**
- * System prompts for each AI feature.
- * Useful for displaying what the AI can do in the UI.
+ * The AI features the app exposes.
+ *
+ * Access is governed by the server-side daily quota (free 5/day, rising with
+ * a vendor plan) — NOT by a per-feature plan gate. The previous `requiredPlan`
+ * field advertised gating that the proxy never enforced and that couple
+ * accounts could not purchase, so it was removed.
  */
 export const AI_FEATURES: {
   id: AIFeature;
   name: string;
   description: string;
   icon: string;
-  requiredPlan: "free" | "basic" | "premium" | "elite";
 }[] = [
   {
     id: "checklist-generator",
     name: "Checklist Generator",
     description: "AI creates a personalized wedding checklist with timelines and priorities",
     icon: "CheckSquare",
-    requiredPlan: "free",
   },
   {
     id: "budget-optimizer",
     name: "Budget Optimizer",
     description: "Get smart suggestions to optimize your wedding budget",
     icon: "TrendingDown",
-    requiredPlan: "free",
   },
   {
     id: "wedding-planner",
     name: "Wedding Planner",
     description: "Ask the AI wedding planner any question about your wedding",
     icon: "Calendar",
-    requiredPlan: "basic",
   },
   {
     id: "vendor-recommendation",
     name: "Vendor Matchmaker",
     description: "AI recommends vendors based on your preferences and budget",
     icon: "Store",
-    requiredPlan: "premium",
   },
   {
     id: "content-assistant",
     name: "Content Writer",
     description: "Write invitations, thank-you notes, speeches and more",
     icon: "FileText",
-    requiredPlan: "basic",
   },
 ];

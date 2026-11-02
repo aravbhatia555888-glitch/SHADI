@@ -40,6 +40,7 @@ Generate 15-20 tasks. Make them specific and actionable.`;
 
   try {
     const result = await callAI({
+      feature: "checklist-generator",
       model: "gpt-4o-mini",
       messages: [
         {
