@@ -363,7 +363,6 @@ export default function HomeScreen() {
             onAddExpensePress={() => setAddExpenseModalVisible(true)}
             onBudgetPress={() => router.push("/budget")}
             onVendorsPress={() => router.push("/vendors")}
-            onAIPlannerPress={() => router.push("/ai-planner")}
             onWeddingCardsPress={() => router.push("/wedding-cards")}
           />
         );

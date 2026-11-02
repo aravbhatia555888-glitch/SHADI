@@ -4,7 +4,6 @@ import {
 DollarSign,
 Palette,
 Plus,
-Sparkles,
 Store,
 } from "lucide-react-native";
 import React from "react";
@@ -15,7 +14,6 @@ interface QuickActionsProps {
   onAddExpensePress: () => void;
   onBudgetPress: () => void;
   onVendorsPress: () => void;
-  onAIPlannerPress: () => void;
   onWeddingCardsPress: () => void;
 }
 
@@ -24,7 +22,6 @@ function QuickActions({
   onAddExpensePress,
   onBudgetPress,
   onVendorsPress,
-  onAIPlannerPress,
   onWeddingCardsPress,
 }: QuickActionsProps) {
   return (
@@ -81,22 +78,6 @@ function QuickActions({
             <Store size={20} color={Colors.light.primary} strokeWidth={1.5} />
           </View>
           <Text style={styles.actionCardText}>Vendors</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={onAIPlannerPress}
-          accessibilityRole="button"
-          accessibilityLabel="AI Wedding Planner"
-        >
-          <View style={styles.actionIconContainer}>
-            <Sparkles
-              size={20}
-              color={Colors.light.primary}
-              strokeWidth={1.5}
-            />
-          </View>
-          <Text style={styles.actionCardText}>AI Planner</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
