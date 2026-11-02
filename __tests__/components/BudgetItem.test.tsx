@@ -1,5 +1,5 @@
 import React from "react";
-import { render, fireEvent } from "@testing-library/react-native";
+import { render } from "@testing-library/react-native";
 import BudgetItemComponent from "@/components/BudgetItem";
 
 const mockBudgetItem = {
@@ -21,74 +21,65 @@ const mockBudgetItem = {
 describe("BudgetItem", () => {
   it("renders category name", () => {
     const { getByText } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByText("Venue")).toBeTruthy();
   });
 
   it("renders spent amount", () => {
     const { getByText } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByText(/2,50,000/)).toBeTruthy();
   });
 
   it("renders estimated amount", () => {
     const { getByText } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByText(/5,00,000/)).toBeTruthy();
   });
 
   it("renders item count", () => {
     const { getByText } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByText("1 items")).toBeTruthy();
   });
 
   it("renders percentage used status", () => {
     const { getByText } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByText("50% used")).toBeTruthy();
   });
 
   it("has progressbar with correct accessibility value", () => {
     const { getByTestId } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     const progressbar = getByTestId("budget-progressbar");
     expect(progressbar).toBeTruthy();
   });
 
-  it("has button accessibility role on container", () => {
+  it("has accessible budget summary", () => {
     const { getByTestId } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     expect(getByTestId("budget-item")).toBeTruthy();
-  });
-
-  it("calls onPress when tapped", () => {
-    const onPress = jest.fn();
-    const { getByTestId } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={onPress} />
-    );
-    fireEvent.press(getByTestId("budget-item"));
-    expect(onPress).toHaveBeenCalledWith(mockBudgetItem);
   });
 
   it("handles zero estimated budget without division error", () => {
     const zeroBudget = { ...mockBudgetItem, estimated: 0, spent: 0 };
     expect(() => {
-      render(<BudgetItemComponent item={zeroBudget} onPress={() => {}} />);
+      render(<BudgetItemComponent item={zeroBudget} />);
     }).not.toThrow();
   });
 
   it("shows no budget set status when estimated is zero", () => {
     const zeroBudget = { ...mockBudgetItem, estimated: 0, spent: 0, items: [] };
     const { getByText } = render(
-      <BudgetItemComponent item={zeroBudget} onPress={() => {}} />
+      <BudgetItemComponent item={zeroBudget} />
     );
     expect(getByText("No budget set")).toBeTruthy();
   });
@@ -96,7 +87,7 @@ describe("BudgetItem", () => {
   it("shows over budget status when spent exceeds estimated", () => {
     const overBudget = { ...mockBudgetItem, estimated: 100000, spent: 150000 };
     const { getByText } = render(
-      <BudgetItemComponent item={overBudget} onPress={() => {}} />
+      <BudgetItemComponent item={overBudget} />
     );
     expect(getByText("Over budget")).toBeTruthy();
   });
@@ -129,14 +120,14 @@ describe("BudgetItem", () => {
       ],
     };
     const { getByText } = render(
-      <BudgetItemComponent item={multiItem} onPress={() => {}} />
+      <BudgetItemComponent item={multiItem} />
     );
     expect(getByText("3 items")).toBeTruthy();
   });
 
   it("has correct accessibility label", () => {
     const { getByTestId } = render(
-      <BudgetItemComponent item={mockBudgetItem} onPress={() => {}} />
+      <BudgetItemComponent item={mockBudgetItem} />
     );
     const item = getByTestId("budget-item");
     expect(item.props.accessibilityLabel).toContain("Venue");
@@ -147,7 +138,7 @@ describe("BudgetItem", () => {
   it("renders with empty items array", () => {
     const emptyItem = { ...mockBudgetItem, items: [] };
     const { getByText } = render(
-      <BudgetItemComponent item={emptyItem} onPress={() => {}} />
+      <BudgetItemComponent item={emptyItem} />
     );
     expect(getByText("0 items")).toBeTruthy();
   });

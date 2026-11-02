@@ -1,14 +1,13 @@
 import Colors from "@/constants/colors";
 import Typography from "@/constants/typography";
 import { BudgetItem as BudgetItemType } from "@/schemas/wedding";
-import { StyleSheet,Text,TouchableOpacity,View } from "react-native";
+import { StyleSheet,Text,View } from "react-native";
 
 interface BudgetItemProps {
   item: BudgetItemType;
-  onPress: (item: BudgetItemType) => void;
 }
 
-export default function BudgetItem({ item, onPress }: BudgetItemProps) {
+export default function BudgetItem({ item }: BudgetItemProps) {
   const progress = item.estimated > 0 ? (item.spent / item.estimated) * 100 : 0;
 
   const getProgressColor = () => {
@@ -29,12 +28,9 @@ export default function BudgetItem({ item, onPress }: BudgetItemProps) {
       : `${Math.round(progress)}% used`;
 
   return (
-    <TouchableOpacity
+    <View
       style={styles.container}
-      onPress={() => onPress(item)}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessible={false}
+      accessible
       testID="budget-item"
       accessibilityLabel={`${
         item.category
@@ -71,7 +67,7 @@ export default function BudgetItem({ item, onPress }: BudgetItemProps) {
           {statusText}
         </Text>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 

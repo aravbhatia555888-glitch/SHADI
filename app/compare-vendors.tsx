@@ -67,11 +67,17 @@ export default function CompareVendorsScreen() {
         {values.map((value, i) => (
           <View key={i} style={styles.valueCell}>
             {typeof value === "boolean" ? (
-              value ? (
-                <Check size={20} color={Colors.light.success} />
-              ) : (
-                <X size={20} color={Colors.light.error} />
-              )
+              <View
+                accessible
+                accessibilityLabel={value ? "Yes" : "No"}
+                accessibilityRole="text"
+              >
+                {value ? (
+                  <Check size={20} color={Colors.light.success} />
+                ) : (
+                  <X size={20} color={Colors.light.error} />
+                )}
+              </View>
             ) : (
               <Text style={styles.valueText}>{value || "N/A"}</Text>
             )}
@@ -89,6 +95,9 @@ export default function CompareVendorsScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
         >
           <ChevronLeft size={24} color={Colors.light.white} />
         </TouchableOpacity>
@@ -104,7 +113,7 @@ export default function CompareVendorsScreen() {
         {/* Recommendation summary */}
         <View style={styles.recommendationsCard}>
           <View style={styles.recommendationsHeader}>
-            <Crown size={16} color={Colors.light.secondary} />
+            <Crown size={16} color={Colors.light.primary} />
             <Text style={styles.recommendationsTitle}>Best Picks</Text>
           </View>
           <View style={styles.recommendationRow}>
@@ -122,7 +131,7 @@ export default function CompareVendorsScreen() {
             </Text>
           </View>
           <View style={styles.recommendationRow}>
-            <Award size={16} color={Colors.light.secondary} />
+            <Award size={16} color={Colors.light.primary} />
             <Text style={styles.recommendationText}>
               <Text style={styles.recommendationLabel}>Verified: </Text>
               {verifiedNames.length > 0
@@ -142,7 +151,12 @@ export default function CompareVendorsScreen() {
                   showRating
                   showPriceRange
                   style={styles.vendorCard}
-                  onPress={() => {}}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/vendor/[id]",
+                      params: { id: vendor.id },
+                    })
+                  }
                 />
                 <TouchableOpacity
                   style={styles.bookButton}
@@ -226,7 +240,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
   },
-  backButton: { padding: 4 },
+  backButton: { padding: 8 },
   headerTitle: {
     fontSize: Typography.fontSizes.lg,
     fontWeight: "600" as FontWeight,

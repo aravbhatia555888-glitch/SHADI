@@ -20,6 +20,7 @@ interface VendorCardProps {
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityLabel?: string;
+  selected?: boolean;
   showRating?: boolean;
   showPriceRange?: boolean;
 }
@@ -29,6 +30,8 @@ export default function VendorCard({
   onPress,
   style,
   testID,
+  accessibilityLabel,
+  selected = false,
   showRating = true,
   showPriceRange = true,
 }: VendorCardProps) {
@@ -96,7 +99,10 @@ export default function VendorCard({
       style={style}
       activeOpacity={0.8}
       accessibilityRole="button"
-      accessibilityLabel={`View details for ${vendor.name}`}
+      accessibilityLabel={
+        accessibilityLabel ?? `View details for ${vendor.name}`
+      }
+      accessibilityState={{ selected }}
       testID={testID}
     >
       <Card variant="elevated">{content}</Card>
@@ -165,7 +171,7 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: Typography.fontSizes.sm,
     fontWeight: Typography.fontWeights.semiBold,
-    color: Colors.light.secondary,
+    color: Colors.light.text,
     marginLeft: 4,
   },
   locationContainer: {

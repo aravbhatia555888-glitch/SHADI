@@ -17,7 +17,7 @@ export default function Icon({
   icon: IconComponent,
   size = 24,
   color = Colors.light.text,
-  fill,
+  fill = "none",
   strokeWidth = 2,
   absoluteStrokeWidth = false,
   style,

@@ -1,7 +1,6 @@
 import BudgetItem from "@/components/BudgetItem";
 import DatePicker from "@/components/DatePicker";
 import Colors from "@/constants/colors";
-import { BudgetItem as BudgetItemType } from "@/schemas/wedding";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
@@ -14,8 +13,10 @@ Filter,
 Plus,
 TrendingUp,
 Wallet,
+X,
 } from "lucide-react-native";
 import {
+useCallback,
 useEffect,
 useLayoutEffect,
 useMemo,
@@ -23,6 +24,7 @@ useRef,
 useState,
 } from "react";
 import {
+ActivityIndicator,
 Animated,
 Modal,
 Platform,
@@ -51,14 +53,26 @@ export default function BudgetScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { budgetItems, weddingDetails, initialize, addBudgetExpense } =
-    useWeddingStore();
+  const {
+    budgetItems,
+    weddingDetails,
+    loading,
+    error,
+    initialize,
+    addBudgetExpense,
+    addBudgetCategory,
+  } = useWeddingStore();
 
-  const [_selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [addExpenseModalVisible, setAddExpenseModalVisible] = useState(false);
+  const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("category");
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [newCategory, setNewCategory] = useState({
+    category: "",
+    estimated: "",
+  });
+  const [addingCategory, setAddingCategory] = useState(false);
   const [newExpense, setNewExpense] = useState({
     name: "",
     amount: "",
@@ -71,6 +85,14 @@ export default function BudgetScreen() {
   const [adding, setAdding] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const openAddExpense = useCallback(() => {
+    if (budgetItems.length === 0) {
+      setAddCategoryModalVisible(true);
+      return;
+    }
+    setAddExpenseModalVisible(true);
+  }, [budgetItems.length]);
 
   useEffect(() => {
     if (user?.id) initialize(user.id);
@@ -97,9 +119,11 @@ export default function BudgetScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => setAddExpenseModalVisible(true)}
+            onPress={openAddExpense}
             accessibilityRole="button"
-            accessibilityLabel="Add expense"
+            accessibilityLabel={
+              budgetItems.length === 0 ? "Create budget category" : "Add expense"
+            }
           >
             <Plus size={20} color={Colors.light.background} />
           </TouchableOpacity>
@@ -114,7 +138,7 @@ export default function BudgetScreen() {
         </View>
       ),
     });
-  }, [navigation, router]);
+  }, [navigation, router, openAddExpense, budgetItems.length]);
 
   const totalEstimated =
     weddingDetails?.totalBudget ||
@@ -130,8 +154,63 @@ export default function BudgetScreen() {
     return Colors.light.success;
   };
 
-  const handleItemPress = (item: BudgetItemType) => {
-    setSelectedCategory(item.id);
+  const handleAddCategory = async () => {
+    const category = newCategory.category.trim();
+    const estimated = Number(newCategory.estimated.replace(/,/g, "").trim());
+
+    if (!category) {
+      useToastStore.getState().showToast("Enter a category name", "warning");
+      return;
+    }
+    if (!newCategory.estimated.trim() || !Number.isFinite(estimated) || estimated < 0) {
+      useToastStore
+        .getState()
+        .showToast("Enter a valid estimated budget", "warning");
+      return;
+    }
+
+    setAddingCategory(true);
+    const result = await addBudgetCategory({
+      category,
+      estimated,
+      spent: 0,
+    });
+    setAddingCategory(false);
+
+    if (result.success) {
+      hapticSuccess();
+      setAddCategoryModalVisible(false);
+      setNewCategory({ category: "", estimated: "" });
+      useToastStore
+        .getState()
+        .showToast("Budget category created", "success");
+    } else {
+      useToastStore
+        .getState()
+        .showToast(result.error || "Could not create category", "error");
+    }
+  };
+
+  const retryLoad = () => {
+    if (user?.id) initialize(user.id);
+  };
+
+  const closeAddExpense = () => {
+    setAddExpenseModalVisible(false);
+    setNewExpense({
+      name: "",
+      amount: "",
+      date: "",
+      vendor: "",
+      notes: "",
+      budgetItemId: "",
+      paid: false,
+    });
+  };
+
+  const closeAddCategory = () => {
+    setAddCategoryModalVisible(false);
+    setNewCategory({ category: "", estimated: "" });
   };
 
   const handleAddExpense = async () => {
@@ -143,11 +222,17 @@ export default function BudgetScreen() {
       return;
     }
 
+    const amount = Number(newExpense.amount.replace(/,/g, "").trim());
+    if (!Number.isFinite(amount) || amount <= 0) {
+      useToastStore.getState().showToast("Enter a valid amount", "warning");
+      return;
+    }
+
     setAdding(true);
     try {
       const result = await addBudgetExpense(newExpense.budgetItemId, {
         name: newExpense.name,
-        amount: parseFloat(newExpense.amount),
+        amount,
         date: newExpense.date || toLocalDateString(new Date()),
         vendor: newExpense.vendor,
         notes: newExpense.notes,
@@ -156,16 +241,7 @@ export default function BudgetScreen() {
 
       if (result.success) {
         hapticSuccess();
-        setAddExpenseModalVisible(false);
-        setNewExpense({
-          name: "",
-          amount: "",
-          date: "",
-          vendor: "",
-          notes: "",
-          budgetItemId: "",
-          paid: false,
-        });
+        closeAddExpense();
         useToastStore.getState().showToast(
           "Expense added successfully!",
           "success"
@@ -213,8 +289,27 @@ export default function BudgetScreen() {
     return Array.from(new Set(budgetItems.map((item) => item.category)));
   }, [budgetItems]);
 
+  const canAddExpense =
+    !adding &&
+    !!newExpense.name &&
+    !!newExpense.amount &&
+    !!newExpense.budgetItemId;
+
   return (
     <View style={styles.container}>
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={retryLoad}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading budget"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
       <Animated.View style={[styles.heroSection, { opacity: fadeAnim }]}>
         <View style={styles.budgetHeader}>
           <Text style={styles.budgetTitle}>Total Budget</Text>
@@ -265,6 +360,7 @@ export default function BudgetScreen() {
           </View>
         </View>
       </Animated.View>
+      )}
 
       <View style={styles.categoriesContainer}>
         <View style={styles.sectionHeader}>
@@ -278,17 +374,40 @@ export default function BudgetScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          {filteredItems.map((item) => (
-            <BudgetItem key={item.id} item={item} onPress={handleItemPress} />
-          ))}
-
-          {filteredItems.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No budget items found</Text>
-              <Text style={styles.emptySubtext}>
-                Try adjusting your filters
-              </Text>
+          {loading && budgetItems.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
             </View>
+          ) : filteredItems.length === 0 ? (
+            <View style={styles.emptyState}>
+              {budgetItems.length === 0 ? (
+                <>
+                  <Text style={styles.emptyText}>No budget categories yet</Text>
+                  <Text style={styles.emptySubtext}>
+                    Create a category to start tracking what you plan to spend.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyButton}
+                    onPress={() => setAddCategoryModalVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Create budget category"
+                  >
+                    <Text style={styles.emptyButtonText}>Create Category</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.emptyText}>No budget items found</Text>
+                  <Text style={styles.emptySubtext}>
+                    Try adjusting your filters
+                  </Text>
+                </>
+              )}
+            </View>
+          ) : (
+            filteredItems.map((item) => (
+              <BudgetItem key={item.id} item={item} />
+            ))
           )}
 
           <View style={styles.bottomSpacing} />
@@ -407,9 +526,102 @@ export default function BudgetScreen() {
                 style={[styles.modalButton, styles.modalButtonPrimary]}
                 onPress={() => setFilterModalVisible(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Apply filters"
+                accessibilityLabel="Done"
               >
-                <Text style={styles.modalButtonText}>Apply</Text>
+                <Text style={styles.modalButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={addCategoryModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={closeAddCategory}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Plus size={24} color={Colors.light.primary} />
+              <Text style={styles.modalTitle}>New Budget Category</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={closeAddCategory}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <X size={24} color={Colors.light.textLight} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Category Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Venue, Catering, Photography"
+                value={newCategory.category}
+                onChangeText={(text) =>
+                  setNewCategory((c) => ({ ...c, category: text }))
+                }
+                placeholderTextColor={Colors.light.textLight}
+                accessibilityLabel="Category name"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Estimated Budget (₹) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                value={newCategory.estimated}
+                onChangeText={(text) =>
+                  setNewCategory((c) => ({ ...c, estimated: text }))
+                }
+                keyboardType="numeric"
+                placeholderTextColor={Colors.light.textLight}
+                accessibilityLabel="Estimated budget in INR"
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonOutline]}
+                onPress={closeAddCategory}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel creating category"
+              >
+                <Text style={styles.modalButtonTextOutline}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  (!newCategory.category.trim() ||
+                    !newCategory.estimated.trim() ||
+                    addingCategory) &&
+                    styles.modalButtonDisabled,
+                ]}
+                onPress={handleAddCategory}
+                disabled={
+                  addingCategory ||
+                  !newCategory.category.trim() ||
+                  !newCategory.estimated.trim()
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Create category"
+                accessibilityState={{
+                  disabled:
+                    addingCategory ||
+                    !newCategory.category.trim() ||
+                    !newCategory.estimated.trim(),
+                  busy: addingCategory,
+                }}
+              >
+                <Text style={styles.modalButtonText}>
+                  {addingCategory ? "Creating..." : "Create Category"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -420,48 +632,65 @@ export default function BudgetScreen() {
         visible={addExpenseModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setAddExpenseModalVisible(false)}
+        onRequestClose={closeAddExpense}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Plus size={24} color={Colors.light.primary} />
               <Text style={styles.modalTitle}>Add Expense</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={closeAddExpense}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <X size={24} color={Colors.light.textLight} />
+              </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Category *</Text>
-                <View style={styles.categorySelector}>
-                  {budgetItems.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.categoryOption,
-                        newExpense.budgetItemId === item.id &&
-                          styles.selectedCategoryOption,
-                      ]}
-                      onPress={() =>
-                        setNewExpense((e) => ({ ...e, budgetItemId: item.id }))
-                      }
-                      accessibilityRole="button"
-                      accessibilityLabel={`Select ${item.category} category`}
-                      accessibilityState={{
-                        selected: newExpense.budgetItemId === item.id,
-                      }}
-                    >
-                      <Text
+                {budgetItems.length === 0 ? (
+                  <Text style={styles.helperText}>
+                    Create a budget category first.
+                  </Text>
+                ) : (
+                  <View style={styles.categorySelector}>
+                    {budgetItems.map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
                         style={[
-                          styles.categoryOptionText,
+                          styles.categoryOption,
                           newExpense.budgetItemId === item.id &&
-                            styles.selectedCategoryOptionText,
+                            styles.selectedCategoryOption,
                         ]}
+                        onPress={() =>
+                          setNewExpense((e) => ({
+                            ...e,
+                            budgetItemId: item.id,
+                          }))
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${item.category} category`}
+                        accessibilityState={{
+                          selected: newExpense.budgetItemId === item.id,
+                        }}
                       >
-                        {item.category}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                        <Text
+                          style={[
+                            styles.categoryOptionText,
+                            newExpense.budgetItemId === item.id &&
+                              styles.selectedCategoryOptionText,
+                          ]}
+                        >
+                          {item.category}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -556,34 +785,26 @@ export default function BudgetScreen() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonOutline]}
-                onPress={() => {
-                  setAddExpenseModalVisible(false);
-                  setNewExpense({
-                    name: "",
-                    amount: "",
-                    date: "",
-                    vendor: "",
-                    notes: "",
-                    budgetItemId: "",
-                    paid: false,
-                  });
-                }}
+                onPress={closeAddExpense}
                 accessibilityRole="button"
                 accessibilityLabel="Cancel adding expense"
               >
                 <Text style={styles.modalButtonTextOutline}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  !canAddExpense && styles.modalButtonDisabled,
+                ]}
                 onPress={handleAddExpense}
-                disabled={
-                  adding ||
-                  !newExpense.name ||
-                  !newExpense.amount ||
-                  !newExpense.budgetItemId
-                }
+                disabled={!canAddExpense}
                 accessibilityRole="button"
                 accessibilityLabel="Add expense"
+                accessibilityState={{
+                  disabled: !canAddExpense,
+                  busy: adding,
+                }}
               >
                 <Text style={styles.modalButtonText}>
                   {adding ? "Adding..." : "Add Expense"}
@@ -609,9 +830,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
@@ -673,12 +894,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(16, 185, 129, 0.2)",
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 12,
     color: "rgba(255, 255, 255, 0.7)",
     fontWeight: "500" as FontWeight,
   },
   statValue: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700" as FontWeight,
     color: Colors.light.background,
   },
@@ -711,11 +932,6 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     letterSpacing: -0.2,
   },
-  addCategoryText: {
-    fontSize: 12,
-    color: Colors.light.primary,
-    fontWeight: "600" as FontWeight,
-  },
   bottomSpacing: {
     height: 20,
   },
@@ -737,6 +953,51 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     color: Colors.light.textLight,
+    textAlign: "center",
+  },
+  emptyButton: {
+    marginTop: 16,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as FontWeight,
+    color: Colors.light.background,
+  },
+  loadingContainer: {
+    paddingVertical: 48,
+    alignItems: "center",
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    margin: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
+    backgroundColor: Colors.light.backgroundAlt,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.light.text,
+  },
+  retryButton: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600" as FontWeight,
+    color: Colors.light.primary,
   },
   modalOverlay: {
     flex: 1,
@@ -761,6 +1022,15 @@ const styles = StyleSheet.create({
     fontWeight: "700" as FontWeight,
     color: Colors.light.text,
   },
+  closeButton: {
+    marginLeft: "auto",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.light.backgroundAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   filterSection: {
     marginBottom: 20,
   },
@@ -781,7 +1051,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
   },
   activeFilterOption: {
     backgroundColor: Colors.light.primary,
@@ -810,10 +1080,13 @@ const styles = StyleSheet.create({
   modalButtonOutline: {
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
   },
   modalButtonPrimary: {
     backgroundColor: Colors.light.primary,
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
   modalButtonText: {
     fontSize: 16,
@@ -834,9 +1107,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 8,
   },
+  helperText: {
+    fontSize: 14,
+    color: Colors.light.textLight,
+  },
   input: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 12,
     padding: Platform.OS === "ios" ? 14 : 12,
     fontSize: 16,
@@ -858,7 +1135,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
   },
   selectedCategoryOption: {
     backgroundColor: Colors.light.primary,
@@ -884,7 +1161,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     marginRight: 12,
     alignItems: "center",
     justifyContent: "center",

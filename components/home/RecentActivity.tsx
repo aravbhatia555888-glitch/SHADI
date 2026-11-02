@@ -18,10 +18,6 @@ function RecentActivity({
 }: RecentActivityProps) {
   const displayTasks = pendingTasks.slice(0, 3);
 
-  if (displayTasks.length === 0) {
-    return null;
-  }
-
   const priorityColor = (priority: ChecklistItem["priority"]) => {
     switch (priority) {
       case "high":
@@ -52,51 +48,58 @@ function RecentActivity({
         </TouchableOpacity>
       </View>
 
-      {displayTasks.map((task) => (
-        <TouchableOpacity
-          key={task.id}
-          style={styles.taskItem}
-          onPress={() => onTaskPress(task)}
-          accessibilityRole="button"
-          accessibilityLabel={`Task: ${task.title}, ${task.priority} priority`}
-        >
-          <View style={styles.taskIconContainer}>
-            <CheckCircle2
-              size={20}
-              color={Colors.light.textLight}
-              strokeWidth={1.5}
-            />
-          </View>
-          <View style={styles.taskContent}>
-            <Text style={styles.taskTitle} numberOfLines={1}>
-              {task.title}
-            </Text>
-            <View style={styles.taskMeta}>
-              <Clock
-                size={12}
+      {displayTasks.length === 0 ? (
+        <Text style={styles.emptyText}>
+          No pending tasks. Add one from your checklist.
+        </Text>
+      ) : (
+        displayTasks.map((task) => (
+          <TouchableOpacity
+            key={task.id}
+            style={styles.taskItem}
+            onPress={() => onTaskPress(task)}
+            accessibilityRole="button"
+            accessibilityLabel={`Task: ${task.title}, ${task.priority} priority`}
+          >
+            <View style={styles.taskIconContainer}>
+              <CheckCircle2
+                size={20}
                 color={Colors.light.textLight}
                 strokeWidth={1.5}
               />
-              <Text style={styles.taskDueDate}>Due: {task.dueDate}</Text>
             </View>
-          </View>
-          <View
-            style={[
-              styles.priorityBadge,
-              { backgroundColor: priorityColor(task.priority) + "20" },
-            ]}
-          >
-            <Text
+            <View style={styles.taskContent}>
+              <Text style={styles.taskTitle} numberOfLines={1}>
+                {task.title}
+              </Text>
+              <View style={styles.taskMeta}>
+                <Clock
+                  size={12}
+                  color={Colors.light.textLight}
+                  strokeWidth={1.5}
+                />
+                <Text style={styles.taskDueDate}>Due: {task.dueDate}</Text>
+              </View>
+            </View>
+            <View
               style={[
-                styles.priorityText,
-                { color: priorityColor(task.priority) },
+                styles.priorityBadge,
+                { backgroundColor: priorityColor(task.priority) + "20" },
               ]}
             >
-              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
+              <Text
+                style={[
+                  styles.priorityText,
+                  { color: priorityColor(task.priority) },
+                ]}
+              >
+                {task.priority.charAt(0).toUpperCase() +
+                  task.priority.slice(1)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))
+      )}
     </View>
   );
 }
@@ -122,6 +125,14 @@ const styles = StyleSheet.create({
   viewAllButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 4,
+  },
+  emptyText: {
+    fontSize: Typography.fontSizes.md,
+    color: Colors.light.textLight,
+    paddingVertical: 8,
   },
   viewAllText: {
     fontSize: Typography.fontSizes.sm,

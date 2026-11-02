@@ -8,18 +8,21 @@ import { useToastStore } from "@/stores/toast-store";
 import { useFocusEffect,useNavigation,useRouter } from "expo-router";
 import {
 AlertCircle,
-Ban,
-Edit,
+Eye,
+EyeOff,
 MessageCircle,
 MoreVertical,
 Search,
+Store,
 Trash2,
 X,
 } from "lucide-react-native";
 import React,{ useEffect,useLayoutEffect,useMemo,useState } from "react";
 import {
+ActivityIndicator,
 Alert,
 FlatList,
+Linking,
 Modal,
 Pressable,
 StyleSheet,
@@ -54,7 +57,7 @@ export default function MessagesScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { user } = useAuthStore();
-  const { conversations, loading, loadConversations, deleteConversation } =
+  const { conversations, loading, error, loadConversations, deleteConversation } =
     useChatStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +65,7 @@ export default function MessagesScreen() {
   const [selectedConversation, setSelectedConversation] =
     useState<ChatConversation | null>(null);
   const [blockedVendors, setBlockedVendors] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
 
   // Load locally-blocked vendors so blocked senders stay hidden across restarts
   useEffect(() => {
@@ -87,9 +91,11 @@ export default function MessagesScreen() {
   );
 
   const filteredConversations = useMemo(() => {
-    const visible = conversations.filter(
-      (conv) => !blockedVendors.includes(conv.vendorId)
-    );
+    const visible = showHidden
+      ? conversations
+      : conversations.filter(
+          (conv) => !blockedVendors.includes(conv.vendorId)
+        );
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
     return visible.filter(
@@ -97,7 +103,7 @@ export default function MessagesScreen() {
         (conv.vendorName ?? "").toLowerCase().includes(query) ||
         (conv.vendorCategory ?? "").toLowerCase().includes(query)
     );
-  }, [conversations, searchQuery, blockedVendors]);
+  }, [conversations, searchQuery, blockedVendors, showHidden]);
 
   const _unreadCount = useMemo(
     () => conversations.reduce((sum, conv) => sum + conv.unreadCount, 0),
@@ -114,7 +120,7 @@ export default function MessagesScreen() {
             accessibilityRole="button"
             accessibilityLabel="Browse vendors"
           >
-            <Edit size={20} color={Colors.light.background} />
+            <Store size={20} color={Colors.light.background} />
           </TouchableOpacity>
         </View>
       ),
@@ -130,6 +136,12 @@ export default function MessagesScreen() {
     setShowOptionsModal(true);
   };
 
+  const persistBlockedVendors = (next: string[]) => {
+    AsyncStorage.setItem(BLOCKED_VENDORS_KEY, JSON.stringify(next)).catch(
+      () => {}
+    );
+  };
+
   const handleDeleteConversation = () => {
     setShowOptionsModal(false);
     setTimeout(() => {
@@ -137,15 +149,27 @@ export default function MessagesScreen() {
         "Delete Conversation",
         `Delete conversation with ${
           selectedConversation?.vendorName ?? "this vendor"
-        }?`,
+        }? This permanently deletes the conversation and all messages. This can't be undone.`,
         [
           { text: "Cancel", style: "cancel" },
           {
             text: "Delete",
             style: "destructive",
             onPress: async () => {
-              if (selectedConversation?.id) {
-                await deleteConversation(selectedConversation.id);
+              const conv = selectedConversation;
+              if (!conv) return;
+              const result = await deleteConversation(conv.id);
+              if (!result.success) {
+                useToastStore
+                  .getState()
+                  .showToast(
+                    result.error || "Failed to delete conversation",
+                    "error"
+                  );
+              } else {
+                useToastStore
+                  .getState()
+                  .showToast("Conversation deleted", "success");
               }
             },
           },
@@ -154,35 +178,30 @@ export default function MessagesScreen() {
     }, 300);
   };
 
-  const handleBlockVendor = () => {
+  const handleHideVendor = () => {
     setShowOptionsModal(false);
     setTimeout(() => {
       Alert.alert(
-        "Block Vendor",
-        `Block ${selectedConversation?.vendorName ?? "this vendor"}? You won't see messages from them.`,
+        "Hide Conversation",
+        `Hide the conversation with ${
+          selectedConversation?.vendorName ?? "this vendor"
+        }? It stays in your account and the vendor can still message you. You can show hidden conversations at any time.`,
         [
           { text: "Cancel", style: "cancel" },
           {
-            text: "Block",
-            style: "destructive",
+            text: "Hide",
             onPress: () => {
               const conv = selectedConversation;
               if (!conv) return;
-              // Persist the block locally and hide + delete the conversation
               setBlockedVendors((prev) => {
-                const next = prev.includes(conv.vendorId)
-                  ? prev
-                  : [...prev, conv.vendorId];
-                AsyncStorage.setItem(
-                  BLOCKED_VENDORS_KEY,
-                  JSON.stringify(next)
-                ).catch(() => {});
+                if (prev.includes(conv.vendorId)) return prev;
+                const next = [...prev, conv.vendorId];
+                persistBlockedVendors(next);
                 return next;
               });
-              deleteConversation(conv.id);
               useToastStore
                 .getState()
-                .showToast("Vendor blocked", "success");
+                .showToast("Conversation hidden", "success");
             },
           },
         ]
@@ -190,26 +209,51 @@ export default function MessagesScreen() {
     }, 300);
   };
 
+  const handleUnhideVendor = () => {
+    setShowOptionsModal(false);
+    const conv = selectedConversation;
+    if (!conv) return;
+    setBlockedVendors((prev) => {
+      const next = prev.filter((id) => id !== conv.vendorId);
+      persistBlockedVendors(next);
+      return next;
+    });
+    useToastStore.getState().showToast("Conversation shown", "success");
+  };
+
+  const openReportEmail = (reason: string) => {
+    const conv = selectedConversation;
+    const vendorName = conv?.vendorName ?? "Vendor";
+    const subject = encodeURIComponent(`Report vendor: ${vendorName}`);
+    const body = encodeURIComponent(
+      `Vendor: ${vendorName}\nConversation: ${
+        conv?.id ?? "unknown"
+      }\nReason: ${reason}\n\nPlease describe what happened:\n`
+    );
+    Linking.openURL(
+      `mailto:support@shaadibazaar.com?subject=${subject}&body=${body}`
+    ).catch(() => {
+      useToastStore
+        .getState()
+        .showToast("Could not open your email app", "error");
+    });
+  };
+
   const handleReport = () => {
     setShowOptionsModal(false);
     setTimeout(() => {
-      Alert.alert("Report Vendor", "Why are you reporting this vendor?", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Spam",
-          onPress: () =>
-            useToastStore
-              .getState()
-              .showToast("Report submitted. Our team will review it.", "success"),
-        },
-        {
-          text: "Inappropriate",
-          onPress: () =>
-            useToastStore
-              .getState()
-              .showToast("Report submitted. Our team will review it.", "success"),
-        },
-      ]);
+      Alert.alert(
+        "Report Vendor",
+        "Choose a reason. This opens an email to support so we can follow up.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Spam", onPress: () => openReportEmail("Spam") },
+          {
+            text: "Inappropriate",
+            onPress: () => openReportEmail("Inappropriate"),
+          },
+        ]
+      );
     }, 300);
   };
 
@@ -242,7 +286,10 @@ export default function MessagesScreen() {
             </Text>
           </View>
 
-          <Text style={styles.vendorCategory}>{item.vendorCategory ?? ""}</Text>
+          <Text style={styles.vendorCategory}>
+            {item.vendorCategory ?? ""}
+            {blockedVendors.includes(item.vendorId) ? " · Hidden" : ""}
+          </Text>
 
           <View style={styles.messageRow}>
             <Text
@@ -275,21 +322,103 @@ export default function MessagesScreen() {
     </View>
   );
 
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <MessageCircle
-          size={56}
-          color={Colors.light.textLight}
-          strokeWidth={1.5}
-        />
+  const renderEmpty = () => {
+    if (loading && conversations.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+        </View>
+      );
+    }
+
+    if (error && conversations.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <AlertCircle
+            size={48}
+            color={Colors.light.error}
+            strokeWidth={1.5}
+          />
+          <Text style={styles.emptyStateTitle}>Couldn't load messages</Text>
+          <Text style={styles.emptyStateText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => {
+              if (user?.id) loadConversations(user.id);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading messages"
+          >
+            <Text style={styles.emptyButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (searchQuery.trim()) {
+      return (
+        <View style={styles.emptyState}>
+          <Search size={48} color={Colors.light.textLight} strokeWidth={1.5} />
+          <Text style={styles.emptyStateTitle}>No results</Text>
+          <Text style={styles.emptyStateText}>
+            No conversations match "{searchQuery.trim()}".
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => setSearchQuery("")}
+            accessibilityRole="button"
+            accessibilityLabel="Clear message search"
+          >
+            <Text style={styles.emptyButtonText}>Clear search</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (conversations.length > 0) {
+      return (
+        <View style={styles.emptyState}>
+          <EyeOff size={48} color={Colors.light.textLight} strokeWidth={1.5} />
+          <Text style={styles.emptyStateTitle}>No visible conversations</Text>
+          <Text style={styles.emptyStateText}>
+            All of your conversations are hidden.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => setShowHidden(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Show hidden conversations"
+          >
+            <Text style={styles.emptyButtonText}>Show hidden</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIconContainer}>
+          <MessageCircle
+            size={56}
+            color={Colors.light.textLight}
+            strokeWidth={1.5}
+          />
+        </View>
+        <Text style={styles.emptyStateTitle}>No Messages Yet</Text>
+        <Text style={styles.emptyStateText}>
+          Start a conversation with vendors from the Vendors tab
+        </Text>
+        <TouchableOpacity
+          style={styles.emptyButton}
+          onPress={() => router.push("/vendors")}
+          accessibilityRole="button"
+          accessibilityLabel="Browse vendors to message"
+        >
+          <Text style={styles.emptyButtonText}>Browse Vendors</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.emptyStateTitle}>No Messages Yet</Text>
-      <Text style={styles.emptyStateText}>
-        Start a conversation with vendors{"\n"}from the Vendors tab
-      </Text>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -311,6 +440,32 @@ export default function MessagesScreen() {
         data={filteredConversations}
         renderItem={renderConversation}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          blockedVendors.length > 0 ? (
+            <TouchableOpacity
+              style={styles.hiddenToggle}
+              onPress={() => setShowHidden((value) => !value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: showHidden }}
+              accessibilityLabel={
+                showHidden
+                  ? "Hide hidden conversations"
+                  : `Show ${blockedVendors.length} hidden conversations`
+              }
+            >
+              {showHidden ? (
+                <EyeOff size={18} color={Colors.light.primary} />
+              ) : (
+                <Eye size={18} color={Colors.light.primary} />
+              )}
+              <Text style={styles.hiddenToggleText}>
+                {showHidden
+                  ? "Hide hidden conversations"
+                  : `Show hidden conversations (${blockedVendors.length})`}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={
           filteredConversations.length === 0 ? styles.emptyContainer : undefined
@@ -333,7 +488,7 @@ export default function MessagesScreen() {
           style={styles.modalOverlay}
           onPress={() => setShowOptionsModal(false)}
         >
-          <View style={styles.optionsModal}>
+          <View style={styles.optionsModal} accessibilityViewIsModal>
             <View style={styles.optionsHeader}>
               <Text style={styles.optionsTitle}>
                 {selectedConversation?.vendorName ?? "Vendor"}
@@ -342,6 +497,7 @@ export default function MessagesScreen() {
                 onPress={() => setShowOptionsModal(false)}
                 accessibilityRole="button"
                 accessibilityLabel="Close options"
+                hitSlop={8}
               >
                 <X size={24} color={Colors.light.textLight} />
               </TouchableOpacity>
@@ -359,17 +515,30 @@ export default function MessagesScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.optionItem}
-              onPress={handleBlockVendor}
-              accessibilityRole="button"
-              accessibilityLabel="Block vendor"
-            >
-              <Ban size={20} color={Colors.light.error} />
-              <Text style={[styles.optionText, styles.optionTextDanger]}>
-                Block Vendor
-              </Text>
-            </TouchableOpacity>
+            {selectedConversation &&
+            blockedVendors.includes(selectedConversation.vendorId) ? (
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={handleUnhideVendor}
+                accessibilityRole="button"
+                accessibilityLabel="Unhide conversation"
+              >
+                <Eye size={20} color={Colors.light.primary} />
+                <Text style={styles.optionText}>Unhide Conversation</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={handleHideVendor}
+                accessibilityRole="button"
+                accessibilityLabel="Hide conversation"
+              >
+                <EyeOff size={20} color={Colors.light.error} />
+                <Text style={[styles.optionText, styles.optionTextDanger]}>
+                  Hide Conversation
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.optionItem}
@@ -492,7 +661,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   timestamp: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.textLight,
     fontWeight: "500",
   },
@@ -526,7 +695,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadBadgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
     color: Colors.light.background,
   },
@@ -557,6 +726,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
+  emptyButton: {
+    marginTop: 20,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyButtonText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: "600",
+    color: Colors.light.background,
+  },
+  hiddenToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.light.backgroundAlt,
+  },
+  hiddenToggleText: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: "600",
+    color: Colors.light.primary,
+  },
   headerButtons: {
     flexDirection: "row",
     alignItems: "center",
@@ -564,9 +760,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",

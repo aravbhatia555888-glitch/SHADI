@@ -327,8 +327,6 @@ export default function HomeScreen() {
             coupleName={coupleName}
             weddingDate={weddingDate}
             weddingLocation={weddingLocation}
-            onNotificationPress={() => router.push("/notifications")}
-            onSearchPress={() => setSearchModalVisible(true)}
             onProfilePress={() => router.push("/(tabs)/profile")}
             fadeAnim={fadeAnim}
             slideAnim={slideAnim}
@@ -338,6 +336,7 @@ export default function HomeScreen() {
         return (
           <WeddingProgress
             pendingTasksCount={pendingTasks.length}
+            totalTasksCount={checklistItems.length}
             budgetPercentage={budgetPercentage}
             totalBudget={totalBudget}
             totalSpent={totalSpent}

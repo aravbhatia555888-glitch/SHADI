@@ -5,16 +5,14 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { FontWeight } from "@/types/styles";
 import { Stack,useRouter } from "expo-router";
-import { ChevronLeft,Globe,Lock,Moon,Trash2,X } from "lucide-react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { ChevronLeft,Globe,Lock,Trash2,X } from "lucide-react-native";
+import { useState } from "react";
 import {
 Alert,
 Linking,
 Modal,
 ScrollView,
 StyleSheet,
-Switch,
 Text,
 TextInput,
 TouchableOpacity,
@@ -24,75 +22,49 @@ View,
 export default function SettingsScreen() {
   const router = useRouter();
   const { changePassword, deleteAccount, loading } = useAuthStore();
-  const SETTINGS_STORAGE_KEY = "user_app_settings";
-  const [darkMode, setDarkMode] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-
-  useEffect(() => {
-    AsyncStorage.getItem(SETTINGS_STORAGE_KEY).then((data) => {
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          if (typeof parsed.darkMode === "boolean") setDarkMode(parsed.darkMode);
-          if (typeof parsed.pushNotifications === "boolean") setPushNotifications(parsed.pushNotifications);
-          if (typeof parsed.emailNotifications === "boolean") setEmailNotifications(parsed.emailNotifications);
-        } catch (_err) {
-          // ignore corrupted local preferences
-        }
-      }
-    });
-  }, []);
-
-  const updateSetting = async (key: string, value: boolean) => {
-    if (key === "darkMode") setDarkMode(value);
-    else if (key === "pushNotifications") setPushNotifications(value);
-    else if (key === "emailNotifications") setEmailNotifications(value);
-
-    try {
-      const current = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
-      const parsed = current ? JSON.parse(current) : {};
-      parsed[key] = value;
-      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(parsed));
-    } catch (_err) {
-      // ignore storage write errors
-    }
-  };
 
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const openPasswordModal = () => {
+    setPasswordError(null);
+    setPasswordModalVisible(true);
+  };
+
+  const closePasswordModal = () => {
+    setPasswordModalVisible(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError(null);
+  };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword) {
-      useToastStore.getState().showToast("Please fill in all fields", "warning");
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Fill in all three password fields.");
       return;
     }
     if (newPassword.length < 6) {
-      useToastStore
-        .getState()
-        .showToast("New password must be at least 6 characters", "warning");
+      setPasswordError("New password must be at least 6 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      useToastStore.getState().showToast("Passwords do not match", "warning");
+      setPasswordError("New passwords do not match.");
       return;
     }
 
+    setPasswordError(null);
     const result = await changePassword(currentPassword, newPassword);
     if (result.success) {
-      setPasswordModalVisible(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      useToastStore
-        .getState()
-        .showToast("Password updated successfully", "success");
+      closePasswordModal();
+      useToastStore.getState().showToast("Password updated", "success");
     } else {
-      useToastStore
-        .getState()
-        .showToast(result.error || "Failed to change password", "error");
+      setPasswordError(
+        result.error || "Could not update your password. Try again."
+      );
     }
   };
 
@@ -134,6 +106,9 @@ export default function SettingsScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
         >
           <ChevronLeft size={24} color={Colors.light.white} />
         </TouchableOpacity>
@@ -141,63 +116,18 @@ export default function SettingsScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Appearance */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Moon size={20} color={Colors.light.textLight} />
-              <Text style={styles.settingText}>Dark Mode</Text>
-            </View>
-            <Switch
-              value={darkMode}
-              onValueChange={(val) => updateSetting("darkMode", val)}
-              trackColor={{
-                false: Colors.light.border,
-                true: Colors.light.primary,
-              }}
-            />
-          </View>
-        </View>
-
-        {/* Notifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingText}>Push Notifications</Text>
-            </View>
-            <Switch
-              value={pushNotifications}
-              onValueChange={(val) => updateSetting("pushNotifications", val)}
-              trackColor={{
-                false: Colors.light.border,
-                true: Colors.light.primary,
-              }}
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingText}>Email Notifications</Text>
-            </View>
-            <Switch
-              value={emailNotifications}
-              onValueChange={(val) => updateSetting("emailNotifications", val)}
-              trackColor={{
-                false: Colors.light.border,
-                true: Colors.light.primary,
-              }}
-            />
-          </View>
-        </View>
-
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Privacy */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy & Security</Text>
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => setPasswordModalVisible(true)}
+            onPress={openPasswordModal}
+            accessibilityRole="button"
+            accessibilityLabel="Change password"
           >
             <View style={styles.settingLeft}>
               <Lock size={20} color={Colors.light.textLight} />
@@ -207,6 +137,8 @@ export default function SettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={handlePrivacyPolicy}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy policy"
           >
             <View style={styles.settingLeft}>
               <Globe size={20} color={Colors.light.textLight} />
@@ -223,6 +155,8 @@ export default function SettingsScreen() {
           <TouchableOpacity
             style={styles.settingItem}
             onPress={handleDeleteAccount}
+            accessibilityRole="button"
+            accessibilityLabel="Delete account"
           >
             <View style={styles.settingLeft}>
               <Trash2 size={20} color={Colors.light.error} />
@@ -239,53 +173,88 @@ export default function SettingsScreen() {
         visible={passwordModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setPasswordModalVisible(false)}
+        onRequestClose={closePasswordModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContent} accessibilityViewIsModal>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Change Password</Text>
               <TouchableOpacity
-                onPress={() => setPasswordModalVisible(false)}
+                onPress={closePasswordModal}
                 accessibilityRole="button"
                 accessibilityLabel="Close"
+                hitSlop={8}
               >
                 <X size={24} color={Colors.light.textLight} />
               </TouchableOpacity>
             </View>
 
+            <Text style={styles.fieldLabel}>Current password</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Current password"
+              placeholder="Enter current password"
               placeholderTextColor={Colors.light.textLight}
               value={currentPassword}
-              onChangeText={setCurrentPassword}
+              onChangeText={(text) => {
+                setCurrentPassword(text);
+                if (passwordError) setPasswordError(null);
+              }}
               secureTextEntry
               autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="New password"
-              placeholderTextColor={Colors.light.textLight}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Confirm new password"
-              placeholderTextColor={Colors.light.textLight}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
+              autoComplete="current-password"
+              textContentType="password"
+              accessibilityLabel="Current password"
             />
 
+            <Text style={styles.fieldLabel}>New password</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Enter new password"
+              placeholderTextColor={Colors.light.textLight}
+              value={newPassword}
+              onChangeText={(text) => {
+                setNewPassword(text);
+                if (passwordError) setPasswordError(null);
+              }}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              accessibilityLabel="New password"
+            />
+
+            <Text style={styles.fieldLabel}>Confirm new password</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Re-enter new password"
+              placeholderTextColor={Colors.light.textLight}
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (passwordError) setPasswordError(null);
+              }}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              accessibilityLabel="Confirm new password"
+            />
+
+            {passwordError ? (
+              <Text
+                style={styles.formError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {passwordError}
+              </Text>
+            ) : null}
+
             <Button
-              title={loading ? "Updating..." : "Update Password"}
+              title="Update Password"
               onPress={handleChangePassword}
               loading={loading}
+              disabled={loading}
               style={styles.modalButton}
             />
           </View>
@@ -311,15 +280,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.headerBackground,
   },
   backButton: {
-    padding: 4,
+    padding: 8,
   },
   headerTitle: {
     fontSize: Typography.fontSizes.lg,
     fontWeight: "600" as FontWeight,
-    color: "#FFFFFF",
+    color: Colors.light.white,
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   section: {
     marginTop: 24,
@@ -380,13 +352,24 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 10,
     padding: 12,
-    marginBottom: 12,
+    marginBottom: 16,
     fontSize: 14,
     color: Colors.light.text,
     backgroundColor: Colors.light.backgroundAlt,
+  },
+  fieldLabel: {
+    fontSize: Typography.fontSizes.sm,
+    fontWeight: "500" as FontWeight,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  formError: {
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.light.error,
+    marginBottom: 8,
   },
   modalButton: {
     marginTop: 8,

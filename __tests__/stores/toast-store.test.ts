@@ -12,11 +12,15 @@ import { useToastStore } from "@/stores/toast-store";
  * We store a reference so we can re-import before each test.
  */
 function resetStore() {
-  useToastStore.setState({ toasts: [] });
+  useToastStore.getState().clearToasts();
 }
 
 describe("useToastStore", () => {
   beforeEach(() => {
+    resetStore();
+  });
+
+  afterEach(() => {
     resetStore();
   });
 

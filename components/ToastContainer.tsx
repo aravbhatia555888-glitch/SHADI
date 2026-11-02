@@ -3,6 +3,7 @@ import { useToastStore,type Toast } from "@/stores/toast-store";
 import { AlertCircle,AlertTriangle,CheckCircle,Info,X } from "lucide-react-native";
 import { useEffect,useRef } from "react";
 import {
+AccessibilityInfo,
 Animated,
 Platform,
 StyleSheet,
@@ -38,11 +39,17 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     ]).start();
   }, [fadeAnim, slideAnim]);
 
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    AccessibilityInfo.announceForAccessibility(toast.message);
+  }, [toast.message]);
+
   const Icon = TOAST_ICONS[toast.type]?.icon || Info;
   const iconColor = TOAST_ICONS[toast.type]?.color || Colors.light.primary;
 
   return (
     <Animated.View
+      accessibilityRole="alert"
       style={[
         styles.toast,
         { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
@@ -53,7 +60,11 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     >
       <View style={styles.toastContent}>
         <Icon size={20} color={iconColor} strokeWidth={1.5} />
-        <Text style={styles.toastMessage} numberOfLines={2}>
+        <Text
+          style={styles.toastMessage}
+          numberOfLines={2}
+          accessibilityLiveRegion="polite"
+        >
           {toast.message}
         </Text>
       </View>
@@ -62,6 +73,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
         style={styles.closeButton}
         accessibilityRole="button"
         accessibilityLabel="Dismiss notification"
+        hitSlop={12}
       >
         <X size={16} color={Colors.light.textLight} strokeWidth={1.5} />
       </TouchableOpacity>

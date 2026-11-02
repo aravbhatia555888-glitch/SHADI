@@ -18,6 +18,7 @@ Users,
 } from "lucide-react-native";
 import { useState } from "react";
 import {
+ActivityIndicator,
 SafeAreaView,
 ScrollView,
 StyleSheet,
@@ -33,15 +34,17 @@ const STANDARD_ADVANCE_PERCENT = 25;
 
 export default function BookingScreen() {
   const router = useRouter();
-  const { vendorId } = useLocalSearchParams();
-  const { vendors } = useWeddingStore();
+  const { vendorId, packageId } = useLocalSearchParams();
+  const { vendors, loading, error, loadVendors } = useWeddingStore();
   const { user } = useAuthStore();
   const { createBooking, checkVendorAvailability } = useBookingStore();
 
   const vendor = vendors.find((v) => v.id === vendorId);
 
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(
+    typeof packageId === "string" ? packageId : null
+  );
   const [guestCount, setGuestCount] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -57,8 +60,29 @@ export default function BookingScreen() {
 
   if (!vendor) {
     return (
-      <View style={styles.container}>
-        <Text>Vendor not found</Text>
+      <View style={styles.notFoundContainer}>
+        {loading ? (
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+        ) : (
+          <>
+            <Text style={styles.notFoundText}>
+              {error ? "Couldn't load this vendor" : "Vendor not found"}
+            </Text>
+            {error ? (
+              <Button
+                title="Retry"
+                onPress={() => loadVendors()}
+                style={styles.notFoundButton}
+              />
+            ) : null}
+            <Button
+              title="Go Back"
+              onPress={() => router.back()}
+              variant="outline"
+              style={styles.notFoundButton}
+            />
+          </>
+        )}
       </View>
     );
   }
@@ -432,6 +456,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  notFoundContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: Colors.light.background,
+  },
+  notFoundText: {
+    fontSize: Typography.fontSizes.lg,
+    fontWeight: "600" as FontWeight,
+    color: Colors.light.text,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  notFoundButton: {
+    minWidth: 160,
+    marginTop: 8,
   },
   header: {
     flexDirection: "row",

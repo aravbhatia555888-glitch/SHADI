@@ -17,34 +17,45 @@ interface ToastState {
 }
 
 let _toastCounter = 0;
+const _toastTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
 
-  showToast: (message: string, type: ToastType = "info", duration = 3000) => {
+  showToast: (message: string, type: ToastType = "info", duration?: number) => {
     _toastCounter++;
     const id = `toast-${Date.now()}-${_toastCounter}`;
-    const toast: Toast = { id, message, type, duration };
+    const resolvedDuration =
+      duration ?? (type === "error" ? 7000 : type === "warning" ? 5000 : 3000);
+    const toast: Toast = { id, message, type, duration: resolvedDuration };
 
     set((state) => ({
       toasts: [...state.toasts, toast],
     }));
 
     // Auto-remove after duration
-    if (duration > 0) {
-      setTimeout(() => {
+    if (resolvedDuration > 0) {
+      const timer = setTimeout(() => {
         get().removeToast(id);
-      }, duration);
+      }, resolvedDuration);
+      _toastTimers.set(id, timer);
     }
   },
 
   removeToast: (id: string) => {
+    const timer = _toastTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      _toastTimers.delete(id);
+    }
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     }));
   },
 
   clearToasts: () => {
+    _toastTimers.forEach((timer) => clearTimeout(timer));
+    _toastTimers.clear();
     set({ toasts: [] });
   },
 }));

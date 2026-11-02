@@ -8,25 +8,40 @@ import { StyleSheet,Text,TouchableOpacity,View } from "react-native";
 
 interface ChecklistItemProps {
   item: ChecklistItemType;
-  onToggle: (id: string, completed: boolean) => void;
+  onToggle: (id: string, completed: boolean) => Promise<boolean>;
 }
 
 export default function ChecklistItem({ item, onToggle }: ChecklistItemProps) {
   const [completed, setCompleted] = useState(item.completed);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     setCompleted(item.completed);
   }, [item.completed]);
 
-  const handleToggle = () => {
-    const newStatus = !completed;
+  const handleToggle = async () => {
+    if (pending) return;
+    const previous = completed;
+    const newStatus = !previous;
+
     setCompleted(newStatus);
+    setPending(true);
     if (newStatus) {
       hapticSuccess();
     } else {
       hapticSelection();
     }
-    onToggle(item.id, newStatus);
+
+    let saved = false;
+    try {
+      saved = await onToggle(item.id, newStatus);
+    } catch {
+      saved = false;
+    }
+    setPending(false);
+    if (!saved) {
+      setCompleted(previous);
+    }
   };
 
   const getDueStatusColor = () => {
@@ -57,9 +72,12 @@ export default function ChecklistItem({ item, onToggle }: ChecklistItemProps) {
       style={[styles.container, completed && styles.completedContainer]}
       onPress={handleToggle}
       activeOpacity={0.7}
+      disabled={pending}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: item.completed }}
-      accessibilityLabel={`${item.title}, due ${formatDueDate(item.dueDate)}`}
+      accessibilityState={{ checked: completed, disabled: pending }}
+      accessibilityLabel={`${item.title}, ${
+        completed ? "completed" : "not completed"
+      }, due ${formatDueDate(item.dueDate)}`}
     >
       <View style={styles.checkboxContainer}>
         {completed ? (

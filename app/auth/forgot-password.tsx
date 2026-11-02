@@ -20,9 +20,14 @@ export default function ForgotPasswordScreen() {
   const { resetPassword, loading, error } = useAuthStore();
   const [email, setEmail] = useState("");
   const [success, setSuccess] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleResetPassword = async () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      setValidationError("Enter the email address for your account.");
+      return;
+    }
+    setValidationError(null);
 
     try {
       const result = await resetPassword({ email: email.trim() });
@@ -78,16 +83,40 @@ export default function ForgotPasswordScreen() {
             <TextInput
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (validationError) setValidationError(null);
+              }}
               placeholder="Enter your email"
               placeholderTextColor={Colors.light.textLight}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="send"
+              onSubmitEditing={handleResetPassword}
+              accessibilityLabel="Email"
             />
+            {validationError && (
+              <Text
+                style={styles.fieldError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {validationError}
+              </Text>
+            )}
           </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && (
+            <Text
+              style={styles.errorText}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {error}
+            </Text>
+          )}
 
           <Button
             title="Send Reset Link"
@@ -99,6 +128,8 @@ export default function ForgotPasswordScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.push("/auth/login")}
+            accessibilityRole="button"
+            accessibilityLabel="Back to login"
           >
             <Text style={styles.backButtonText}>Back to Login</Text>
           </TouchableOpacity>
@@ -115,6 +146,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    width: "100%",
+    maxWidth: 440,
+    alignSelf: "center",
     padding: 24,
   },
   header: {
@@ -145,6 +179,8 @@ const styles = StyleSheet.create({
     height: 48,
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
     paddingHorizontal: 16,
     fontSize: Typography.fontSizes.md,
     color: Colors.light.text,
@@ -154,11 +190,16 @@ const styles = StyleSheet.create({
     color: Colors.light.error,
     textAlign: "center",
   },
+  fieldError: {
+    fontSize: Typography.fontSizes.xs,
+    color: Colors.light.error,
+  },
   button: {
     marginTop: 8,
   },
   backButton: {
     alignItems: "center",
+    paddingVertical: 12,
   },
   backButtonText: {
     fontSize: Typography.fontSizes.sm,

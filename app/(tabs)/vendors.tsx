@@ -178,12 +178,24 @@ export default function VendorsScreen() {
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
+    if (searchQuery.trim()) count++;
+    if (selectedCategory) count++;
+    if (showFavoritesOnly) count++;
     if (selectedPriceRange) count++;
     if (selectedRating) count++;
     if (verifiedOnly) count++;
     if (selectedCountry || (selectedCity && selectedCity !== "All")) count++;
     return count;
-  }, [selectedCity, selectedCountry, selectedPriceRange, selectedRating, verifiedOnly]);
+  }, [
+    searchQuery,
+    selectedCategory,
+    showFavoritesOnly,
+    selectedCity,
+    selectedCountry,
+    selectedPriceRange,
+    selectedRating,
+    verifiedOnly,
+  ]);
 
   useLayoutEffect(() => {
     const activeCount = activeFilterCount;
@@ -320,10 +332,15 @@ export default function VendorsScreen() {
       const upper = rangeParts[1] ? parsePriceString(rangeParts[1]) : Infinity;
 
       filtered = filtered.filter((vendor) => {
-        // Prefer numeric minPrice for accurate filtering
-        const vendorMin = vendor.minPrice ?? parsePriceString(vendor.priceRange);
-        const vendorMax = vendor.maxPrice ?? Infinity;
-        // Show vendors whose range overlaps with the selected range
+        const vendorRangeParts = (vendor.priceRange || "").split(" - ");
+        const vendorMin =
+          vendor.minPrice ??
+          parsePriceString(vendorRangeParts[0] || "0");
+        const vendorMax =
+          vendor.maxPrice ??
+          (vendorRangeParts[1]
+            ? parsePriceString(vendorRangeParts[1])
+            : vendorMin);
         return vendorMin <= upper && vendorMax >= lower;
       });
     }
@@ -389,6 +406,9 @@ export default function VendorsScreen() {
   };
 
   const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory(null);
+    setShowFavoritesOnly(false);
     setSelectedCountry("");
     setSelectedCity("");
     setSelectedPriceRange(null);
@@ -499,6 +519,7 @@ export default function VendorsScreen() {
             <VendorCard
               vendor={item}
               onPress={() => handleVendorPress(item)}
+              selected={isSelected}
               accessibilityLabel={
                 compareMode
                   ? `${item.name}${isSelected ? ", selected" : ", not selected"} for compare`
@@ -589,6 +610,10 @@ export default function VendorsScreen() {
             disabled={compareSelection.length < 2}
             accessibilityRole="button"
             accessibilityLabel="Compare selected vendors"
+            accessibilityState={{
+              disabled: compareSelection.length < 2,
+            }}
+            accessibilityHint="Select at least 2 vendors"
           >
             <Text style={styles.compareBarButtonText}>
               Compare ({compareSelection.length}/2+)
@@ -612,6 +637,7 @@ export default function VendorsScreen() {
                 onPress={() => setShowSearchModal(false)}
                 accessibilityRole="button"
                 accessibilityLabel="Close search"
+                hitSlop={8}
               >
                 <X size={24} color={Colors.light.textLight} />
               </TouchableOpacity>
@@ -625,15 +651,17 @@ export default function VendorsScreen() {
                 onChangeText={setSearchQuery}
                 placeholderTextColor={Colors.light.textLight}
                 autoFocus
+                returnKeyType="search"
+                accessibilityLabel="Search vendors"
               />
             </View>
             <TouchableOpacity
               style={styles.searchApplyButton}
               onPress={() => setShowSearchModal(false)}
               accessibilityRole="button"
-              accessibilityLabel="Apply search"
+              accessibilityLabel="Done searching"
             >
-              <Text style={styles.searchApplyText}>Search</Text>
+              <Text style={styles.searchApplyText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -653,6 +681,7 @@ export default function VendorsScreen() {
                 onPress={() => setShowFilterModal(false)}
                 accessibilityRole="button"
                 accessibilityLabel="Close filters"
+                hitSlop={8}
               >
                 <X size={24} color={Colors.light.text} />
               </TouchableOpacity>
@@ -867,7 +896,7 @@ export default function VendorsScreen() {
                 style={styles.resetButton}
               />
               <Button
-                title="Apply Filters"
+                title="Done"
                 onPress={() => setShowFilterModal(false)}
                 style={styles.applyButton}
               />
@@ -896,9 +925,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
@@ -909,9 +938,9 @@ const styles = StyleSheet.create({
     top: -4,
     right: -4,
     backgroundColor: Colors.light.error,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -919,7 +948,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.headerBackground,
   },
   headerBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 14,
     fontWeight: "700",
     color: Colors.light.background,
   },
@@ -953,6 +983,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
@@ -1010,7 +1042,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   vendorCount: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.textLight,
     fontWeight: "500",
     marginTop: 8,
@@ -1155,6 +1187,8 @@ const styles = StyleSheet.create({
   filterOption: {
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
     padding: 8,
     minWidth: 80,
     alignItems: "center",
@@ -1209,12 +1243,15 @@ const styles = StyleSheet.create({
   },
   showAllButton: {
     backgroundColor: Colors.light.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   showAllText: {
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.light.background,
     fontWeight: "600",
   },
@@ -1224,7 +1261,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: Colors.light.backgroundAlt,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,

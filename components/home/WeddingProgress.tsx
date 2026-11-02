@@ -12,6 +12,7 @@ View,
 
 interface WeddingProgressProps {
   pendingTasksCount: number;
+  totalTasksCount: number;
   budgetPercentage: number;
   totalBudget: number;
   totalSpent: number;
@@ -22,6 +23,7 @@ interface WeddingProgressProps {
 
 function WeddingProgress({
   pendingTasksCount,
+  totalTasksCount,
   budgetPercentage,
   totalBudget,
   totalSpent,
@@ -29,6 +31,17 @@ function WeddingProgress({
   fadeAnim,
   scaleAnim,
 }: WeddingProgressProps) {
+  const taskProgress =
+    totalTasksCount > 0
+      ? ((totalTasksCount - pendingTasksCount) / totalTasksCount) * 100
+      : 100;
+  const clampedBudgetPercentage = Math.min(
+    100,
+    Math.max(0, Math.round(budgetPercentage))
+  );
+  const isOverBudget = totalSpent > totalBudget;
+  const remainingAmount = Math.abs(totalBudget - totalSpent);
+
   return (
     <>
       <Animated.View
@@ -55,7 +68,7 @@ function WeddingProgress({
               style={[
                 styles.statProgressBar,
                 {
-                  width: `${Math.min(100, (pendingTasksCount / 20) * 100)}%`,
+                  width: `${Math.min(100, Math.max(0, taskProgress))}%`,
                 },
               ]}
             />
@@ -70,13 +83,13 @@ function WeddingProgress({
               strokeWidth={1.5}
             />
           </View>
-          <Text style={styles.statValue}>{budgetPercentage}%</Text>
+          <Text style={styles.statValue}>{clampedBudgetPercentage}%</Text>
           <Text style={styles.statLabel}>Budget Used</Text>
           <View style={styles.statProgress}>
             <View
               style={[
                 styles.statProgressBar,
-                { width: `${budgetPercentage}%` },
+                { width: `${clampedBudgetPercentage}%` },
               ]}
             />
           </View>
@@ -121,9 +134,11 @@ function WeddingProgress({
           </View>
           <View style={styles.budgetStatDivider} />
           <View style={styles.budgetStatItem}>
-            <Text style={styles.budgetStatLabel}>Remaining</Text>
+            <Text style={styles.budgetStatLabel}>
+              {isOverBudget ? "Over Budget" : "Remaining"}
+            </Text>
             <Text style={[styles.budgetStatValue, styles.remainingValue]}>
-              ₹{((totalBudget - totalSpent) / 100000).toFixed(1)}L
+              ₹{(remainingAmount / 100000).toFixed(1)}L
             </Text>
           </View>
         </View>
@@ -132,12 +147,12 @@ function WeddingProgress({
             <View
               style={[
                 styles.budgetProgressFill,
-                { width: `${budgetPercentage}%` },
+                { width: `${clampedBudgetPercentage}%` },
               ]}
             />
           </View>
           <Text style={styles.budgetProgressText}>
-            {budgetPercentage}% used
+            {clampedBudgetPercentage}% used
           </Text>
         </View>
       </TouchableOpacity>

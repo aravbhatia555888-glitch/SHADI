@@ -16,8 +16,6 @@ interface HomeHeaderProps {
   coupleName: string;
   weddingDate: string;
   weddingLocation: string;
-  onNotificationPress: () => void;
-  onSearchPress: () => void;
   onProfilePress: () => void;
   fadeAnim: Animated.Value;
   slideAnim: Animated.Value;
@@ -27,8 +25,6 @@ function HomeHeader({
   coupleName,
   weddingDate,
   weddingLocation,
-  onNotificationPress: _onNotificationPress,
-  onSearchPress: _onSearchPress,
   onProfilePress,
   fadeAnim,
   slideAnim,

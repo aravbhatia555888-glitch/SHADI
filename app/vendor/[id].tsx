@@ -30,6 +30,7 @@ Star,
 } from "lucide-react-native";
 import { useEffect,useState } from "react";
 import {
+ActivityIndicator,
 Image,
 ScrollView,
 Share,
@@ -42,8 +43,14 @@ View,
 export default function VendorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { vendors, favoriteVendors, toggleFavoriteVendor, loadVendors } =
-    useWeddingStore();
+  const {
+    vendors,
+    favoriteVendors,
+    toggleFavoriteVendor,
+    loadVendors,
+    loading,
+    error,
+  } = useWeddingStore();
   const { user } = useAuthStore();
   const {
     loadVendorReviews,
@@ -86,6 +93,35 @@ export default function VendorDetailScreen() {
   }, [loadVendorReviews, vendor?.id]);
 
   if (!vendor) {
+    if (loading) {
+      return (
+        <View style={styles.notFoundContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.notFoundText}>Loading vendor…</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.notFoundContainer}>
+          <Text style={styles.notFoundText}>Couldn't load this vendor</Text>
+          <Text style={styles.notFoundSubtext}>{error}</Text>
+          <Button
+            title="Retry"
+            onPress={() => loadVendors()}
+            style={styles.notFoundButton}
+          />
+          <Button
+            title="Go Back"
+            onPress={() => router.back()}
+            variant="outline"
+            style={styles.notFoundButton}
+          />
+        </View>
+      );
+    }
+
     return (
       <View style={styles.notFoundContainer}>
         <Text style={styles.notFoundText}>Vendor not found</Text>
@@ -127,12 +163,14 @@ export default function VendorDetailScreen() {
     }
   };
 
-  const handleBookNow = () => {
+  const handleBookNow = (packageId?: string) => {
     // Route through the full booking form (package selection, date, payment)
     // instead of jumping straight to a confirmation screen.
     router.push({
       pathname: "/booking/[vendorId]",
-      params: { vendorId: vendor.id },
+      params: packageId
+        ? { vendorId: vendor.id, packageId }
+        : { vendorId: vendor.id },
     });
   };
 
@@ -371,7 +409,7 @@ export default function VendorDetailScreen() {
                 </View>
                 <Button
                   title="Select Package"
-                  onPress={handleBookNow}
+                  onPress={() => handleBookNow(pkg.id)}
                   variant="outline"
                 />
               </Card>
@@ -686,7 +724,7 @@ export default function VendorDetailScreen() {
         </View>
         <Button
           title="Book Now"
-          onPress={handleBookNow}
+          onPress={() => handleBookNow()}
           style={styles.bookButton}
         />
       </View>
@@ -926,6 +964,17 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.lg,
     fontWeight: "600" as FontWeight,
     color: Colors.light.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  notFoundSubtext: {
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.light.textLight,
+    textAlign: "center",
     marginBottom: 16,
+  },
+  notFoundButton: {
+    minWidth: 160,
+    marginTop: 8,
   },
 });

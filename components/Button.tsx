@@ -121,10 +121,6 @@ export default function Button({
         break;
     }
 
-    if (disabled || loading) {
-      baseStyle.push(styles.disabledText);
-    }
-
     if (textStyle) {
       baseStyle.push(textStyle);
     }
@@ -137,9 +133,9 @@ export default function Button({
       return (
         <ActivityIndicator
           color={
-            variant === "outline"
-              ? Colors.light.primary
-              : Colors.light.background
+            variant === "primary"
+              ? Colors.light.background
+              : Colors.light.primary
           }
           size="small"
         />
@@ -184,7 +180,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    padding: 12,
+    height: 48,
+    paddingHorizontal: 16,
   },
   contentContainer: {
     flexDirection: "row",
@@ -199,7 +196,7 @@ const styles = StyleSheet.create({
   outlineContainer: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: Colors.light.secondary,
+    borderColor: Colors.light.primary,
   },
   ghostContainer: {
     backgroundColor: "transparent",
@@ -211,7 +208,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   smallContainer: {
-    height: 36,
+    height: 44,
     paddingHorizontal: 16,
   },
   largeContainer: {
@@ -229,13 +226,10 @@ const styles = StyleSheet.create({
     color: Colors.light.primary,
   },
   outlineText: {
-    color: Colors.light.secondary,
+    color: Colors.light.primary,
   },
   ghostText: {
     color: Colors.light.primary,
-  },
-  disabledText: {
-    color: Colors.light.textLight,
   },
   smallText: {
     fontSize: Typography.fontSizes.sm,

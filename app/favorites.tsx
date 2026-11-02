@@ -6,9 +6,10 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
 import { Stack,useRouter } from "expo-router";
-import { BookOpen,Clock,Grid,Heart,List,Users } from "lucide-react-native";
+import { BookOpen,AlertCircle,Clock,Grid,Heart,List,Users } from "lucide-react-native";
 import { useEffect,useMemo,useState } from "react";
 import {
+ActivityIndicator,
 FlatList,
 Image,
 ScrollView,
@@ -93,7 +94,7 @@ const INSPIRATION_ARTICLES: InspirationArticle[] = [
 export default function FavoritesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { vendors, favoriteVendors, favoriteArticles, initialize } =
+  const { vendors, favoriteVendors, favoriteArticles, loading, error, initialize } =
     useWeddingStore();
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [activeTab, setActiveTab] = useState<"vendors" | "articles">("vendors");
@@ -272,25 +273,50 @@ export default function FavoritesScreen() {
         </ScrollView>
       ) : activeTab === "vendors" ? (
         <View style={styles.emptyContainer}>
-          <Heart
-            size={64}
-            color={Colors.light.error}
-            fill={Colors.light.error}
-            strokeWidth={1.5}
-          />
-          <Text style={styles.emptyTitle}>No Favorite Vendors Yet</Text>
-          <Text style={styles.emptySubtext}>
-            Start exploring vendors and tap the heart icon to add them to your
-            favorites
-          </Text>
-          <TouchableOpacity
-            style={styles.browseButton}
-            onPress={() => router.push("/(tabs)/vendors")}
-            accessibilityRole="button"
-            accessibilityLabel="Browse vendors"
-          >
-            <Text style={styles.browseButtonText}>Browse Vendors</Text>
-          </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="large" color={Colors.light.primary} />
+          ) : error ? (
+            <>
+              <AlertCircle
+                size={64}
+                color={Colors.light.error}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.emptyTitle}>Couldn't Load Favorites</Text>
+              <Text style={styles.emptySubtext}>{error}</Text>
+              <TouchableOpacity
+                style={styles.browseButton}
+                onPress={() => {
+                  if (user?.id) initialize(user.id);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading favorites"
+              >
+                <Text style={styles.browseButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Heart
+                size={64}
+                color={Colors.light.error}
+                fill={Colors.light.error}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.emptyTitle}>No Favorite Vendors Yet</Text>
+              <Text style={styles.emptySubtext}>
+                Open a vendor and tap the heart to save it here.
+              </Text>
+              <TouchableOpacity
+                style={styles.browseButton}
+                onPress={() => router.push("/(tabs)/vendors")}
+                accessibilityRole="button"
+                accessibilityLabel="Browse vendors"
+              >
+                <Text style={styles.browseButtonText}>Browse Vendors</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       ) : null}
 
@@ -371,7 +397,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   viewToggle: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 8,
   },
   content: {
@@ -442,9 +471,12 @@ const styles = StyleSheet.create({
   },
   browseButton: {
     backgroundColor: Colors.light.primary,
+    minHeight: 44,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   browseButtonText: {
     fontSize: Typography.fontSizes.md,
