@@ -8,8 +8,16 @@ Store,
 User,
 } from "lucide-react-native";
 import Colors from "../../constants/colors";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function TabLayout() {
+  const { user } = useAuthStore();
+  const role = user?.role ?? "couple";
+  // Couples plan; vendors receive enquiries; explorers just browse.
+  const showChecklist = role === "couple";
+  const showMessages = role === "couple" || role === "vendor";
+  const showVendors = role === "couple" || role === "explorer";
+
   return (
     <Tabs
       initialRouteName="home"
@@ -72,6 +80,7 @@ export default function TabLayout() {
         name="checklist"
         options={{
           title: "Checklist",
+          href: showChecklist ? undefined : null,
           tabBarButtonTestID: "tab-checklist",
           tabBarIcon: ({ color, focused }) => (
             <IconWrapper
@@ -87,6 +96,7 @@ export default function TabLayout() {
         name="messages"
         options={{
           title: "Messages",
+          href: showMessages ? undefined : null,
           tabBarButtonTestID: "tab-messages",
           tabBarIcon: ({ color, focused }) => (
             <IconWrapper
@@ -102,6 +112,7 @@ export default function TabLayout() {
         name="vendors"
         options={{
           title: "Vendors",
+          href: showVendors ? undefined : null,
           tabBarButtonTestID: "tab-vendors",
           tabBarIcon: ({ color, focused }) => (
             <IconWrapper
