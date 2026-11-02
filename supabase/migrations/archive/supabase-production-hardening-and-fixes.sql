@@ -1,4 +1,13 @@
 -- ============================================================================
+-- !!! ARCHIVED — DO NOT APPLY !!!
+-- ----------------------------------------------------------------------------
+-- Superseded. It writes to a non-existent `audit_logs` table (the schema uses
+-- `audit_log`) and redefines `finalize_subscription_payment` and
+-- `expire_vendor_subscriptions`, which are owned by supabase-payment-integrity.sql
+-- and supabase-subscription-expiry.sql. See ../archive/README.md.
+-- ============================================================================
+
+-- ============================================================================
 -- ShaadiBazaar Production Readiness & Hardening Fixes (Phase 2)
 -- ============================================================================
 -- Fixes:

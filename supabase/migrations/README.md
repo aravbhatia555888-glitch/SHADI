@@ -20,6 +20,16 @@ The SQL files live at the **repo root**. Apply them in this exact order via the 
 | 12 | `supabase-chat-migration.sql` | Chat conversations and messages |
 | 13 | `supabase-booking-price-hardening.sql` | Server-authoritative booking package prices and advance amounts |
 | 14 | `supabase-vendor-inquiry-dashboard.sql` | Security-definer RPCs so vendor owners can load inquiry stats/recent inquiries (RLS blocks direct SELECTs for vendors) |
+| 15 | `supabase-user-cascade-migration.sql` | ON DELETE CASCADE for user-owned tables (needs the payment/booking tables from files 1–4) |
+| 16 | `supabase-booking-contacts.sql` | Adds contact_name / contact_phone / contact_email to vendor_bookings |
+| 17 | `supabase-security-hardening.sql` | Drops self-granted subscription and admin policies, chat RLS, authoritative booking-price trigger (after setup, chat, subscriptions, booking-price-hardening) |
+| 18 | `supabase-subscription-expiry.sql` | `expire_vendor_subscriptions()` + daily pg_cron schedule (needs vendor_subscriptions + audit_log) |
+| 19 | `supabase-account-deletion-retention.sql` | Retains financial ledger rows by switching payment FKs to ON DELETE SET NULL |
+| 20 | `supabase-payment-integrity.sql` | `write_audit()`, `finalize_booking_payment` / `finalize_subscription_payment` v2, rate-limit pruning (after booking-price-hardening, rate-limit, audit-log) |
+| 21 | `supabase-free-tier-replies.sql` | Atomic `reply_to_inquiry` + free-tier credits (after subscription-payments and payment-integrity) |
+| 22 | `supabase-vendor-subscription-cancel.sql` | `cancel_vendor_subscription()` RPC |
+| 23 | `supabase-sample-data.sql` | Demo vendors only — **never run in production** |
+| 24 | `supabase-wedding-culture-migration.sql` | Adds `culture` to wedding_details (set during onboarding) |
 
 ## Notes
 
@@ -27,3 +37,5 @@ The SQL files live at the **repo root**. Apply them in this exact order via the 
 - Run them once in order on a fresh Supabase project.
 - On existing projects, apply only the new migrations you haven't run yet.
 - **Never** skip order — later files depend on tables created by earlier files (e.g., file 2 adds `subscription_tier` to `vendors`, which file 1's trigger references).
+- Rows 15–24 are additive to files 1–14; where a dependency is noted, verify it against your project before applying.
+- 🗄️ **`supabase-production-hardening-and-fixes.sql` has been archived** to `archive/` — it was stale and conflicted with files 18 and 20 (it wrote to a non-existent `audit_logs` table and redefined functions those files own). It must not be applied. See `archive/README.md`.
