@@ -21,7 +21,10 @@ jest.mock("@/services/ai-checklist", () => ({
 }));
 
 jest.mock("@/stores/auth-store", () => ({
-  useAuthStore: () => ({ user: { id: "test-user-id" } }),
+  useAuthStore: () => ({
+    user: { id: "test-user-id", role: "couple" },
+    setRole: jest.fn(async () => ({ success: true })),
+  }),
 }));
 
 jest.mock("@/stores/wedding-store", () => ({
@@ -60,15 +63,23 @@ describe("Onboarding flow", () => {
     expect(getByText("Get started")).toBeTruthy();
   });
 
-  it("advances to the couple step", () => {
+  it("asks who is joining after Get started", () => {
     const { getByText, getByLabelText } = render(<OnboardingScreen />);
     fireEvent.press(getByLabelText("Get started"));
+    expect(getByText("What brings you here?")).toBeTruthy();
+  });
+
+  it("shows the couple step after choosing 'planning a wedding'", () => {
+    const { getByText, getByLabelText } = render(<OnboardingScreen />);
+    fireEvent.press(getByLabelText("Get started"));
+    fireEvent.press(getByLabelText(/planning a wedding/i));
     expect(getByText("Who's getting married?")).toBeTruthy();
   });
 
   it("blocks continuing without names", () => {
     const { getByText, getByLabelText } = render(<OnboardingScreen />);
     fireEvent.press(getByLabelText("Get started"));
+    fireEvent.press(getByLabelText(/planning a wedding/i));
     fireEvent.press(getByLabelText("Continue"));
     expect(
       getByText("Add your names so we can personalise your plan.")
@@ -78,6 +89,7 @@ describe("Onboarding flow", () => {
   it("asks for a date once names are entered", () => {
     const { getByText, getByLabelText } = render(<OnboardingScreen />);
     fireEvent.press(getByLabelText("Get started"));
+    fireEvent.press(getByLabelText(/planning a wedding/i));
     fireEvent.changeText(getByLabelText("Couple names"), "Aarav & Priya");
     fireEvent.press(getByLabelText("Continue"));
     expect(

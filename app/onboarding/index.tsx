@@ -3,6 +3,7 @@ import DatePicker from "@/components/DatePicker";
 import Colors from "@/constants/colors";
 import Typography from "@/constants/typography";
 import { generateSmartChecklist } from "@/services/ai-checklist";
+import type { UserRole } from "@/schemas/auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
@@ -14,10 +15,13 @@ ArrowRight,
 Calendar,
 Check,
 ChevronLeft,
+ChevronRight,
 Heart,
 IndianRupee,
 MapPin,
+Search,
 Sparkles,
+Store,
 Users,
 } from "lucide-react-native";
 import { type ReactNode,useEffect,useMemo,useRef,useState } from "react";
@@ -113,11 +117,12 @@ function formatBudget(amount: number): string {
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const { user, setRole } = useAuthStore();
   const { setWeddingDetails, addChecklistItem } = useWeddingStore();
 
-  // 0 = welcome, 1..FORM_STEPS = form steps
-  const [step, setStep] = useState(0);
+  // welcome → role → couple form (steps 1..FORM_STEPS)
+  const [stage, setStage] = useState<"welcome" | "role" | "couple">("welcome");
+  const [step, setStep] = useState(1);
   const [phase, setPhase] = useState<"form" | "saving" | "done">("form");
   const [error, setError] = useState<string | null>(null);
   const [seededCount, setSeededCount] = useState(0);
@@ -159,7 +164,7 @@ export default function OnboardingScreen() {
       Animated.timing(fade, { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start();
-  }, [step, reduceMotion, fade, slide]);
+  }, [stage, step, reduceMotion, fade, slide]);
 
   const daysLeft = useMemo(() => {
     if (!weddingDate) return null;
@@ -178,6 +183,29 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     if (user?.id) await markOnboardingComplete(user.id);
     router.replace("/(tabs)/home");
+  };
+
+  const chooseRole = async (role: UserRole) => {
+    hapticSelection();
+
+    if (role === "couple") {
+      setError(null);
+      setStage("couple");
+      setStep(1);
+      return;
+    }
+
+    if (user?.id) {
+      await setRole(role);
+      await markOnboardingComplete(user.id);
+    }
+    hapticSuccess();
+
+    if (role === "vendor") {
+      router.replace("/vendor-apply");
+    } else {
+      router.replace("/(tabs)/vendors");
+    }
   };
 
   const validateAndContinue = () => {
@@ -288,7 +316,7 @@ export default function OnboardingScreen() {
   }
 
   // ── Welcome ───────────────────────────────────────────────────
-  if (step === 0) {
+  if (stage === "welcome") {
     return (
       <View style={styles.welcome}>
         <View style={styles.ringLarge} pointerEvents="none" />
@@ -330,7 +358,10 @@ export default function OnboardingScreen() {
             title="Get started"
             variant="secondary"
             size="large"
-            onPress={() => goToStep(1)}
+            onPress={() => {
+              hapticSelection();
+              setStage("role");
+            }}
             renderIcon={() => (
               <ArrowRight size={20} color={Colors.light.headerBackground} />
             )}
@@ -348,6 +379,59 @@ export default function OnboardingScreen() {
     );
   }
 
+  // ── Who's joining? ───────────────────────────────────────────
+  if (stage === "role") {
+    return (
+      <View style={styles.root}>
+        <View style={[styles.hero, { paddingTop: insets.top + 12 }]}>
+          <View style={styles.heroBar}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setStage("welcome")}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={8}
+            >
+              <ChevronLeft size={24} color={Colors.light.background} />
+            </TouchableOpacity>
+            <Text style={styles.stepCount}>Welcome</Text>
+            <View style={styles.backButton} />
+          </View>
+          <Text style={styles.heroKicker}>One quick question</Text>
+          <Text style={styles.heroTitle}>What brings you here?</Text>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.body}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View
+            style={{ opacity: fade, transform: [{ translateY: slide }] }}
+          >
+            <RoleCard
+              icon={<Heart size={22} color={Colors.light.primary} />}
+              title="I'm planning a wedding"
+              subtitle="Checklists, budget and vendors in one place"
+              onPress={() => chooseRole("couple")}
+            />
+            <RoleCard
+              icon={<Store size={22} color={Colors.light.primary} />}
+              title="I'm a vendor"
+              subtitle="List your business and receive enquiries"
+              onPress={() => chooseRole("vendor")}
+            />
+            <RoleCard
+              icon={<Search size={22} color={Colors.light.primary} />}
+              title="Just exploring"
+              subtitle="Browse vendors without setting up a wedding"
+              onPress={() => chooseRole("explorer")}
+            />
+          </Animated.View>
+        </ScrollView>
+      </View>
+    );
+  }
+
   const stepMeta = getStepMeta(step);
 
   return (
@@ -356,7 +440,7 @@ export default function OnboardingScreen() {
         <View style={styles.heroBar}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => goToStep(step - 1)}
+            onPress={() => (step <= 1 ? setStage("role") : goToStep(step - 1))}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={8}
@@ -595,6 +679,35 @@ function getStepMeta(step: number): { kicker: string; title: string } {
     default:
       return { kicker: "Almost done", title: "Here's your plan." };
   }
+}
+
+function RoleCard({
+  icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.roleCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${subtitle}`}
+    >
+      <View style={styles.roleIcon}>{icon}</View>
+      <View style={styles.roleTextContainer}>
+        <Text style={styles.roleTitle}>{title}</Text>
+        <Text style={styles.roleSubtitle}>{subtitle}</Text>
+      </View>
+      <ChevronRight size={20} color={Colors.light.textLight} />
+    </TouchableOpacity>
+  );
 }
 
 function Chip({
@@ -970,6 +1083,39 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
     backgroundColor: Colors.light.background,
+  },
+
+  roleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: Colors.light.white,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+  },
+  roleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.light.surfaceSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleTextContainer: {
+    flex: 1,
+  },
+  roleTitle: {
+    fontSize: Typography.fontSizes.md,
+    fontWeight: "700" as FontWeight,
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  roleSubtitle: {
+    fontSize: Typography.fontSizes.sm,
+    color: Colors.light.textLight,
   },
 
   // Overlay (saving / done)

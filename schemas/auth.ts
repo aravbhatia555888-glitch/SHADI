@@ -1,10 +1,16 @@
 import { z } from 'zod'
 
+// Who the signed-in user is. Couples plan a wedding; vendors list a business;
+// explorers just browse. Defaults to 'couple' for existing accounts.
+export const UserRoleSchema = z.enum(['couple', 'vendor', 'explorer'])
+export type UserRole = z.infer<typeof UserRoleSchema>
+
 // User schema with validation
 export const UserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email('Invalid email format'),
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+  role: UserRoleSchema.default('couple'),
   weddingDate: z.string().datetime().optional(),
   profileImageUrl: z.string().url('Invalid profile image URL').optional(),
   partner: z.object({

@@ -29,6 +29,10 @@ let _budgetReloadTimer: ReturnType<typeof setTimeout> | null = null;
 // Map of page number → in-flight promise to avoid duplicate parallel loads
 const _loadVendorsPromises = new Map<number, Promise<void>>();
 
+// Placeholder cover for self-registered vendors until they upload their own.
+const DEFAULT_VENDOR_COVER_IMAGE =
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80";
+
 export type ExpenseId = `e${number}`;
 
 interface WeddingState {
@@ -58,6 +62,13 @@ interface WeddingState {
 
   loadVendors: (page?: number, limit?: number) => Promise<void>;
   loadMoreVendors: () => Promise<void>;
+  createVendor: (input: {
+    name: string;
+    category: string;
+    city: string;
+    description: string;
+    startingPrice: number;
+  }) => Promise<{ success: boolean; error?: string }>;
   hasMoreVendors: boolean;
   currentVendorPage: number;
   /** @deprecated Use vendor-store instead for vendor favorites. */
@@ -395,6 +406,41 @@ export const useWeddingStore = create<WeddingState>()(
           currentVendorPage: nextPage,
           hasMoreVendors: afterCount > beforeCount,
         });
+      },
+
+      createVendor: async (input) => {
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) {
+            return { success: false, error: "User not authenticated" };
+          }
+
+          // Self-registration creates a HIDDEN listing (is_available = false);
+          // it stays out of public queries until reviewed. is_available is not
+          // a server-only column, so the client may set it.
+          const { error } = await supabase.from("vendors").insert({
+            name: input.name,
+            category: input.category,
+            description: input.description,
+            location: { city: input.city, country: "India" },
+            price_range: `₹${input.startingPrice.toLocaleString("en-IN")}+`,
+            min_price: input.startingPrice,
+            cover_image: DEFAULT_VENDOR_COVER_IMAGE,
+            contact: { email: user.email ?? "" },
+            is_available: false,
+            user_id: user.id,
+          });
+
+          if (error) {
+            return { success: false, error: handleSupabaseError(error) };
+          }
+
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: handleSupabaseError(error) };
+        }
       },
 
       toggleFavoriteVendor: async (vendorId: string) => {

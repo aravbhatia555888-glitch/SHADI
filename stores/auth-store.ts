@@ -10,6 +10,7 @@ type SignInData,
 type SignUpData,
 type UpdateProfileData,
 type User,
+type UserRole,
 } from "@/schemas/auth";
 import { AnalyticsEvents,trackEvent } from "@/services/analytics";
 import { setUser as setSentryUser } from "@/services/sentry";
@@ -40,6 +41,7 @@ interface AuthState {
   updateProfile: (
     data: UpdateProfileData
   ) => Promise<{ success: boolean; error?: string }>;
+  setRole: (role: UserRole) => Promise<{ success: boolean; error?: string }>;
 
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
@@ -316,6 +318,7 @@ export const useAuthStore = create<AuthState>()(
               id: authData.user.id,
               email: validatedData.email,
               name: validatedData.name,
+              role: "couple",
             };
 
             const validatedUser = UserSchema.parse(user);
@@ -432,6 +435,34 @@ export const useAuthStore = create<AuthState>()(
 
           const validatedUser = UserSchema.parse(updatedUser);
           set({ user: validatedUser, loading: false });
+          return { success: true };
+        } catch (error) {
+          const errorMessage = handleSupabaseError(error);
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+      setRole: async (role: UserRole) => {
+        try {
+          const currentUser = get().user;
+          if (!currentUser) {
+            return { success: false, error: "No user logged in" };
+          }
+          set({ loading: true, error: null });
+
+          const { error } = await supabase
+            .from("profiles")
+            .update({ role, updated_at: new Date().toISOString() })
+            .eq("id", currentUser.id);
+
+          if (error) {
+            const errorMessage = handleSupabaseError(error);
+            set({ error: errorMessage, loading: false });
+            return { success: false, error: errorMessage };
+          }
+
+          const updatedUser = UserSchema.parse({ ...currentUser, role });
+          set({ user: updatedUser, loading: false });
           return { success: true };
         } catch (error) {
           const errorMessage = handleSupabaseError(error);

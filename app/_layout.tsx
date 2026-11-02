@@ -157,6 +157,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="vendor-apply"
+            options={{
+              headerShown: false,
+              animation: "slide_from_right",
+            }}
+          />
+          <Stack.Screen
             name="vendor"
             options={{
               animation: "slide_from_right",

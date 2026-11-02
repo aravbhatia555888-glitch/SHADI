@@ -128,6 +128,7 @@ describe("Auth Store", () => {
       id: "test-uuid-1234",
       email: "test@example.com",
       name: "Test User",
+      role: "couple" as const,
     };
     useAuthStore.setState({ user: mockUser });
     expect(useAuthStore.getState().user).toEqual(mockUser);
@@ -135,7 +136,7 @@ describe("Auth Store", () => {
 
   it("clears user on logout", async () => {
     useAuthStore.setState({
-      user: { id: "test-id", email: "test@test.com", name: "Test" },
+      user: { id: "test-id", email: "test@test.com", name: "Test", role: "couple" },
     });
     expect(useAuthStore.getState().user).not.toBeNull();
 

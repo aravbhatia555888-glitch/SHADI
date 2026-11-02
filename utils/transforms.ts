@@ -143,6 +143,7 @@ export function transformProfileToUser(profile: Record<string, unknown>): User {
     id: profile.id as string,
     email: profile.email as string,
     name: profile.name as string,
+    role: (profile.role as User["role"]) ?? "couple",
     weddingDate: (profile.wedding_date as string) || undefined,
     profileImageUrl: (profile.profile_image_url as string) || undefined,
     partner:

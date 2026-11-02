@@ -30,6 +30,7 @@ The SQL files live at the **repo root**. Apply them in this exact order via the 
 | 22 | `supabase-vendor-subscription-cancel.sql` | `cancel_vendor_subscription()` RPC |
 | 23 | `supabase-sample-data.sql` | Demo vendors only — **never run in production** |
 | 24 | `supabase-wedding-culture-migration.sql` | Adds `culture` to wedding_details (set during onboarding) |
+| 25 | `supabase-user-roles-migration.sql` | Adds `role` (couple / vendor / explorer) to profiles |
 
 ## Notes
 
