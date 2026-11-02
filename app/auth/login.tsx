@@ -6,10 +6,10 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { FontWeight } from "@/types/styles";
 import { useRouter } from "expo-router";
-import { Eye,EyeOff,Lock,Mail } from "lucide-react-native";
+import { Apple,Eye,EyeOff,Lock,Mail } from "lucide-react-native";
 import { useState } from "react";
 import {
-Dimensions,
+ActivityIndicator,
 KeyboardAvoidingView,
 Platform,
 ScrollView,
@@ -17,13 +17,14 @@ StyleSheet,
 Text,
 TextInput,
 TouchableOpacity,
+useWindowDimensions,
 View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
 export default function LoginScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const logoSize = Math.min(width * 0.4, 160);
   const {
     signIn,
     loginWithGoogle,
@@ -71,7 +72,7 @@ export default function LoginScreen() {
       const result = await signIn({ email: email.trim(), password });
 
       if (result.success) {
-        router.replace("/(tabs)/home");
+        router.replace("/");
       }
     } catch (err) {
       if (__DEV__) console.error("Login error:", err);
@@ -82,7 +83,7 @@ export default function LoginScreen() {
     setSocialLoading("google");
     const result = await loginWithGoogle();
     if (result.success) {
-      router.replace("/(tabs)/home");
+      router.replace("/");
     } else if (result.error) {
       useToastStore.getState().showToast(result.error, "error");
     }
@@ -93,7 +94,7 @@ export default function LoginScreen() {
     setSocialLoading("apple");
     const result = await loginWithApple();
     if (result.success) {
-      router.replace("/(tabs)/home");
+      router.replace("/");
     } else if (result.error) {
       useToastStore.getState().showToast(result.error, "error");
     }
@@ -110,9 +111,15 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>ShaadiBazaar</Text>
+          <View
+            style={[
+              styles.logoPlaceholder,
+              { width: logoSize, height: logoSize, borderRadius: logoSize / 2 },
+            ]}
+          >
+            <Text style={styles.logoText}>SB</Text>
           </View>
+          <Text style={styles.brandName}>ShaadiBazaar</Text>
           <Text style={styles.title}>Welcome Back!</Text>
           <Text style={styles.subtitle}>
             Sign in to continue planning your perfect wedding
@@ -146,11 +153,17 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                accessibilityLabel="Email input"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                accessibilityLabel="Email"
               />
             </View>
             {validationErrors.email && (
-              <Text style={styles.validationError}>
+              <Text
+                style={styles.validationError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
                 {validationErrors.email}
               </Text>
             )}
@@ -180,7 +193,11 @@ export default function LoginScreen() {
                 placeholder="Enter your password"
                 placeholderTextColor={Colors.light.textLight}
                 secureTextEntry={!showPassword}
-                accessibilityLabel="Password input"
+                autoComplete="current-password"
+                textContentType="password"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+                accessibilityLabel="Password"
               />
               <TouchableOpacity
                 style={styles.showPasswordButton}
@@ -189,6 +206,7 @@ export default function LoginScreen() {
                 accessibilityLabel={
                   showPassword ? "Hide password" : "Show password"
                 }
+                hitSlop={6}
               >
                 <Icon
                   icon={showPassword ? EyeOff : Eye}
@@ -198,13 +216,25 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             {validationErrors.password && (
-              <Text style={styles.validationError}>
+              <Text
+                style={styles.validationError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
                 {validationErrors.password}
               </Text>
             )}
           </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && (
+            <Text
+              style={styles.errorText}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {error}
+            </Text>
+          )}
 
           <TouchableOpacity
             style={styles.forgotPassword}
@@ -231,38 +261,64 @@ export default function LoginScreen() {
 
           <View style={styles.socialButtons}>
             <TouchableOpacity
-              style={styles.socialButton}
+              style={[
+                styles.socialButton,
+                socialLoading !== null &&
+                  socialLoading !== "google" &&
+                  styles.socialButtonDisabled,
+              ]}
               onPress={handleGoogleLogin}
               disabled={socialLoading !== null}
               accessibilityLabel="Sign in with Google"
               accessibilityRole="button"
+              accessibilityState={{
+                busy: socialLoading === "google",
+                disabled: socialLoading !== null,
+              }}
             >
-              <View style={styles.socialButtonContent}>
-                <Text style={styles.socialButtonText}>G</Text>
-                <Text style={styles.socialButtonLabel}>Google</Text>
-              </View>
+              {socialLoading === "google" ? (
+                <ActivityIndicator size="small" color={Colors.light.text} />
+              ) : (
+                <View style={styles.socialButtonContent}>
+                  <Text style={styles.socialButtonText}>G</Text>
+                  <Text style={styles.socialButtonLabel}>Google</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             {Platform.OS === "ios" && (
               <TouchableOpacity
-                style={[styles.socialButton, styles.appleButton]}
+                style={[
+                  styles.socialButton,
+                  styles.appleButton,
+                  socialLoading !== null &&
+                    socialLoading !== "apple" &&
+                    styles.socialButtonDisabled,
+                ]}
                 onPress={handleAppleLogin}
                 disabled={socialLoading !== null}
                 accessibilityLabel="Sign in with Apple"
                 accessibilityRole="button"
+                accessibilityState={{
+                  busy: socialLoading === "apple",
+                  disabled: socialLoading !== null,
+                }}
               >
-                <View style={styles.socialButtonContent}>
-                  <Text
-                    style={[styles.socialButtonText, styles.appleButtonText]}
-                  >
-                    🍎
-                  </Text>
-                  <Text
-                    style={[styles.socialButtonLabel, styles.appleButtonText]}
-                  >
-                    Apple
-                  </Text>
-                </View>
+                {socialLoading === "apple" ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={Colors.light.white}
+                  />
+                ) : (
+                  <View style={styles.socialButtonContent}>
+                    <Icon icon={Apple} size={20} color={Colors.light.white} />
+                    <Text
+                      style={[styles.socialButtonLabel, styles.appleButtonText]}
+                    >
+                      Apple
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             )}
           </View>
@@ -290,6 +346,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    width: "100%",
+    maxWidth: 440,
+    alignSelf: "center",
     padding: 24,
   },
   header: {
@@ -297,18 +356,22 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoPlaceholder: {
-    width: width * 0.4,
-    height: width * 0.4,
     backgroundColor: Colors.light.backgroundAlt,
-    borderRadius: width * 0.2,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   logoText: {
-    fontSize: Typography.fontSizes.xl,
+    fontSize: 40,
+    fontWeight: "800" as FontWeight,
+    color: Colors.light.primary,
+  },
+  brandName: {
+    fontSize: Typography.fontSizes.lg,
     fontWeight: "700" as FontWeight,
     color: Colors.light.primary,
+    marginBottom: 20,
+    textAlign: "center",
   },
   title: {
     fontSize: Typography.fontSizes.xxl,
@@ -341,7 +404,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     paddingHorizontal: 16,
   },
   inputIcon: {
@@ -411,8 +474,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     backgroundColor: Colors.light.white,
+  },
+  socialButtonDisabled: {
+    opacity: 0.5,
   },
   appleButton: {
     backgroundColor: Colors.light.text,

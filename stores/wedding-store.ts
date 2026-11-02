@@ -157,6 +157,7 @@ export const useWeddingStore = create<WeddingState>()(
                 weddingDate: weddingData.wedding_date,
                 weddingLocation: weddingData.wedding_location,
                 totalBudget: weddingData.total_budget,
+                culture: weddingData.culture ?? undefined,
                 profileImageUrl: weddingData.profile_image_url,
               };
 
@@ -232,6 +233,7 @@ export const useWeddingStore = create<WeddingState>()(
                 wedding_date: validatedData.weddingDate,
                 wedding_location: validatedData.weddingLocation,
                 total_budget: validatedData.totalBudget,
+                culture: validatedData.culture ?? null,
                 updated_at: new Date().toISOString(),
               })
               .eq("user_id", user.id);
@@ -241,6 +243,7 @@ export const useWeddingStore = create<WeddingState>()(
               wedding_date: validatedData.weddingDate,
               wedding_location: validatedData.weddingLocation,
               total_budget: validatedData.totalBudget,
+              culture: validatedData.culture ?? null,
               user_id: user.id,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),

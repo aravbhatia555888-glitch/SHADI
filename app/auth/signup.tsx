@@ -85,14 +85,12 @@ export default function SignupScreen() {
       });
 
       if (result.success) {
-        router.replace("/(tabs)/home");
+        router.replace("/");
       }
     } catch (err) {
       if (__DEV__) console.error("Signup error:", err);
     }
   };
-
-  const firstError = Object.values(validationErrors).find(Boolean);
 
   return (
     <KeyboardAvoidingView
@@ -125,10 +123,19 @@ export default function SignupScreen() {
               placeholder="Enter your full name"
               placeholderTextColor={Colors.light.textLight}
               autoCapitalize="words"
-              accessibilityLabel="Full name input"
+              autoComplete="name"
+              textContentType="name"
+              returnKeyType="next"
+              accessibilityLabel="Full name"
             />
             {validationErrors.name && (
-              <Text style={styles.fieldError}>{validationErrors.name}</Text>
+              <Text
+                style={styles.fieldError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {validationErrors.name}
+              </Text>
             )}
           </View>
 
@@ -151,10 +158,18 @@ export default function SignupScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
-              accessibilityLabel="Email input"
+              textContentType="emailAddress"
+              returnKeyType="next"
+              accessibilityLabel="Email"
             />
             {validationErrors.email && (
-              <Text style={styles.fieldError}>{validationErrors.email}</Text>
+              <Text
+                style={styles.fieldError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {validationErrors.email}
+              </Text>
             )}
           </View>
 
@@ -176,7 +191,10 @@ export default function SignupScreen() {
                 placeholder="Enter your password"
                 placeholderTextColor={Colors.light.textLight}
                 secureTextEntry={!showPassword}
-                accessibilityLabel="Password input"
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="next"
+                accessibilityLabel="Password"
               />
               <TouchableOpacity
                 style={styles.showPasswordButton}
@@ -194,7 +212,13 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
             {validationErrors.password && (
-              <Text style={styles.fieldError}>{validationErrors.password}</Text>
+              <Text
+                style={styles.fieldError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {validationErrors.password}
+              </Text>
             )}
           </View>
 
@@ -216,7 +240,11 @@ export default function SignupScreen() {
                 placeholder="Confirm your password"
                 placeholderTextColor={Colors.light.textLight}
                 secureTextEntry={!showConfirmPassword}
-                accessibilityLabel="Confirm password input"
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="done"
+                onSubmitEditing={handleSignup}
+                accessibilityLabel="Confirm password"
               />
               <TouchableOpacity
                 style={styles.showPasswordButton}
@@ -236,7 +264,11 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
             {validationErrors.confirmPassword && (
-              <Text style={styles.fieldError}>
+              <Text
+                style={styles.fieldError}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
                 {validationErrors.confirmPassword}
               </Text>
             )}
@@ -260,17 +292,27 @@ export default function SignupScreen() {
               )}
             </View>
             <Text style={styles.termsText}>
-              I agree to the{" "}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
+              I agree to the Terms of Service and Privacy Policy
             </Text>
           </TouchableOpacity>
           {validationErrors.terms && (
-            <Text style={styles.fieldError}>{validationErrors.terms}</Text>
+            <Text
+              style={styles.fieldError}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {validationErrors.terms}
+            </Text>
           )}
 
-          {(firstError || error) && (
-            <Text style={styles.errorText}>{firstError || error}</Text>
+          {error && (
+            <Text
+              style={styles.errorText}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {error}
+            </Text>
           )}
 
           <Button
@@ -303,6 +345,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    width: "100%",
+    maxWidth: 440,
+    alignSelf: "center",
     padding: 24,
   },
   header: {
@@ -335,6 +380,8 @@ const styles = StyleSheet.create({
     height: 48,
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
     paddingHorizontal: 16,
     fontSize: Typography.fontSizes.md,
     color: Colors.light.text,
@@ -344,25 +391,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.backgroundAlt,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.inputBorder,
   },
   passwordInput: {
     flex: 1,
     backgroundColor: "transparent",
+    borderWidth: 0,
   },
   showPasswordButton: {
     paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   termsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 12,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.inputBorder,
     marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -377,10 +428,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.sm,
     color: Colors.light.textLight,
     lineHeight: 20,
-  },
-  termsLink: {
-    color: Colors.light.primary,
-    fontWeight: "600" as const,
   },
   errorText: {
     fontSize: Typography.fontSizes.sm,

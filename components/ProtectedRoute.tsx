@@ -20,7 +20,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (!user && !inAuthGroup) {
       router.replace("/auth/login");
     } else if (user && inAuthGroup) {
-      router.replace("/(tabs)/home");
+      // Route through the entry gate so onboarding decides where to land.
+      router.replace("/");
     }
   }, [user, loading, segments, router]);
 

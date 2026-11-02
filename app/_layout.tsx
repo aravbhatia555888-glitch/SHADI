@@ -150,6 +150,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="onboarding"
+            options={{
+              headerShown: false,
+              animation: "fade",
+            }}
+          />
+          <Stack.Screen
             name="vendor"
             options={{
               animation: "slide_from_right",
