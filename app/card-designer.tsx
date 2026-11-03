@@ -504,7 +504,7 @@ export default function CardDesignerScreen() {
       </View>
 
       {/* Action Buttons */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         <Button
           title={editingCardId ? "Update Card" : "Save Card"}
           onPress={handleSaveCard}
