@@ -1,6 +1,7 @@
 import Button from "@/components/Button";
 import WeddingCardRenderer from "@/components/WeddingCardRenderer";
 import Colors from "@/constants/colors";
+import Constants from "expo-constants";
 import Typography from "@/constants/typography";
 import { AnalyticsEvents,trackEvent } from "@/services/analytics";
 import { useToastStore } from "@/stores/toast-store";
@@ -15,7 +16,6 @@ WEDDING_CARD_TEMPLATES,
 } from "@/types/wedding-card";
 import { getSavedCards,saveWeddingCard } from "@/services/wedding-cards";
 import { hapticLight,hapticSuccess } from "@/utils/haptics";
-import * as MediaLibrary from "expo-media-library";
 import { Stack,useLocalSearchParams,useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import {
@@ -49,6 +49,18 @@ async function loadCaptureRef(): Promise<
   try {
     const mod = await import("react-native-view-shot");
     return mod.captureRef;
+  } catch {
+    return null;
+  }
+}
+
+async function loadMediaLibrary(): Promise<
+  typeof import("expo-media-library") | null
+> {
+  // Not available in Expo Go (ExpoMediaLibraryNext native module is missing).
+  if (Constants.executionEnvironment === "storeClient") return null;
+  try {
+    return await import("expo-media-library");
   } catch {
     return null;
   }
@@ -162,6 +174,13 @@ export default function CardDesignerScreen() {
         useToastStore
           .getState()
           .showToast("Saving cards isn't available in Expo Go.", "warning");
+        return;
+      }
+      const MediaLibrary = await loadMediaLibrary();
+      if (!MediaLibrary) {
+        useToastStore
+          .getState()
+          .showToast("Saving to gallery isn't available in Expo Go.", "warning");
         return;
       }
       const { status } = await MediaLibrary.requestPermissionsAsync();

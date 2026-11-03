@@ -15,18 +15,17 @@ savePushToken,
 import { initSentry } from "@/services/sentry";
 import { useAuthStore } from "@/stores/auth-store";
 import { useWeddingStore } from "@/stores/wedding-store";
-import * as Notifications from "expo-notifications";
 import { Stack,router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect,useRef } from "react";
 import { Platform,StyleSheet,TouchableOpacity,View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider,useSafeAreaInsets } from "react-native-safe-area-context";
 
 initSentry();
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const { initialize, user, isInitialized: authInitialized } = useAuthStore();
   const {
     initialize: initializeWedding,
@@ -35,9 +34,9 @@ export default function RootLayout() {
   } = useWeddingStore();
   const insets = useSafeAreaInsets();
   const notificationListener =
-    useRef<Notifications.EventSubscription | null>(null);
+    useRef<{ remove: () => void } | null>(null);
   const responseListener =
-    useRef<Notifications.EventSubscription | null>(null);
+    useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
     // Auto-detect if a real analytics provider is configured (e.g. Firebase)
@@ -164,7 +163,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="vendor"
+            name="vendor/[id]"
             options={{
               animation: "slide_from_right",
               headerLeft: () => (
@@ -226,7 +225,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="booking"
+            name="booking/[vendorId]"
             options={{
               headerShown: false,
               animation: "slide_from_right",
@@ -287,6 +286,14 @@ export default function RootLayout() {
       </ProtectedRoute>
       </ErrorBoundary>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <RootLayoutInner />
+    </SafeAreaProvider>
   );
 }
 

@@ -1,3 +1,7 @@
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { executionEnvironment: "bare" },
+}));
 jest.mock("expo-device", () => ({ isDevice: false }));
 jest.mock("expo-notifications", () => ({
   setNotificationHandler: jest.fn(),
