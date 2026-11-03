@@ -31,6 +31,7 @@ export default function LoginScreen() {
     loading,
     error,
     clearError,
+    continueAsGuest,
   } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -253,6 +254,22 @@ export default function LoginScreen() {
           <Text style={styles.signupLink}>Sign Up</Text>
         </TouchableOpacity>
       </AuthFooter>
+
+      {__DEV__ ? (
+        <TouchableOpacity
+          style={styles.devBypass}
+          onPress={async () => {
+            await continueAsGuest();
+            router.replace("/");
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Explore the app without signing in"
+        >
+          <Text style={styles.devBypassText}>
+            Explore without signing in (dev)
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </AuthScreenContainer>
   );
 }
@@ -344,5 +361,16 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSizes.sm,
     color: Colors.light.primary,
     fontWeight: "600" as FontWeight,
+  },
+  devBypass: {
+    alignSelf: "center",
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  devBypassText: {
+    fontSize: Typography.fontSizes.xs,
+    color: Colors.light.textLight,
+    textDecorationLine: "underline",
   },
 });

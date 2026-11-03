@@ -18,12 +18,16 @@ import { signInWithApple,signInWithGoogle } from "@/services/social-auth";
 import { withRetry } from "@/utils/retry";
 import { transformProfileToUser } from "@/utils/transforms";
 import { clearAllPersistedStores } from "@/utils/clear-stores";
+import { markOnboardingComplete } from "@/utils/onboarding";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage,persist } from "zustand/middleware";
 
 // Module-level auth subscription reference for proper cleanup
 let _authSubscription: { unsubscribe: () => void } | null = null;
+
+// Dev-only synthetic user used by "Explore without signing in".
+const GUEST_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 interface AuthState {
   user: User | null;
@@ -42,6 +46,8 @@ interface AuthState {
     data: UpdateProfileData
   ) => Promise<{ success: boolean; error?: string }>;
   setRole: (role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  /** Dev-only: open the app as a guest without a Supabase session. */
+  continueAsGuest: () => Promise<void>;
 
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
@@ -469,6 +475,21 @@ export const useAuthStore = create<AuthState>()(
           set({ error: errorMessage, loading: false });
           return { success: false, error: errorMessage };
         }
+      },
+      continueAsGuest: async () => {
+        await markOnboardingComplete(GUEST_USER_ID);
+        const guest: User = {
+          id: GUEST_USER_ID,
+          email: "guest@shaadibazaar.local",
+          name: "Guest",
+          role: "couple",
+        };
+        set({
+          user: UserSchema.parse(guest),
+          loading: false,
+          isInitialized: true,
+          error: null,
+        });
       },
       clearError: () => {
         set({ error: null });
