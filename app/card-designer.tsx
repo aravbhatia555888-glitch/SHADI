@@ -522,7 +522,7 @@ export default function CardDesignerScreen() {
           renderIcon={() => <Download size={18} color={Colors.light.primary} />}
         />
         <Button
-          title="Share Card"
+          title="Share"
           onPress={handleShare}
           loading={saving}
           style={styles.footerButton}
