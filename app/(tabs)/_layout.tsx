@@ -9,9 +9,11 @@ User,
 } from "lucide-react-native";
 import Colors from "../../constants/colors";
 import { useAuthStore } from "@/stores/auth-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const role = user?.role ?? "couple";
   // Couples plan; vendors receive enquiries; explorers just browse.
   const showChecklist = role === "couple";
@@ -36,8 +38,11 @@ export default function TabLayout() {
           backgroundColor: Colors.light.background,
           borderTopWidth: 1,
           borderTopColor: Colors.light.border,
-          height: 64,
-          paddingBottom: 6,
+          // Account for the Android navigation bar (edge-to-edge). Overriding
+          // height/padding disables react-navigation's automatic inset, so we
+          // add insets.bottom ourselves or the bar hides under the system nav.
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom + 6,
           paddingTop: 6,
         },
         tabBarActiveTintColor: Colors.light.primary,
