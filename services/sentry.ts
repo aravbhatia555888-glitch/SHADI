@@ -1,57 +1,39 @@
-import * as Sentry from "@sentry/react-native";
+/**
+ * Sentry integration is DISABLED.
+ *
+ * @sentry/react-native is a native module that Expo Go does not bundle; importing
+ * it crashes the app at startup when running in Expo Go. This keeps the same API
+ * so call sites are unchanged.
+ *
+ * To re-enable error tracking (in a development/production build, not Expo Go):
+ * restore `import * as Sentry from "@sentry/react-native";` and call the Sentry
+ * methods below, and set EXPO_PUBLIC_SENTRY_DSN.
+ */
+
+type SeverityLevel = "fatal" | "error" | "warning" | "log" | "info" | "debug";
 
 export function initSentry() {
-  const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-
-  if (!dsn && !__DEV__) {
-    console.error(
-      "[Sentry] EXPO_PUBLIC_SENTRY_DSN is not set. Error tracking is DISABLED in production. " +
-      "Set it in your .env file or via expo config."
-    );
-  }
-
-  if (!dsn) return;
-
-  Sentry.init({
-    dsn,
-    environment: __DEV__ ? "development" : "production",
-    debug: __DEV__,
-    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-    beforeSend(event) {
-      if (__DEV__) {
-        return null;
-      }
-      return event;
-    },
-  });
+  // Disabled (see file header).
 }
 
-export function captureError(
-  error: unknown,
-  context?: Record<string, unknown>
-) {
+export function captureError(error: unknown, context?: Record<string, unknown>) {
   if (__DEV__) {
-    console.error("[Sentry]", error, context);
-    return;
+    console.error("[Sentry disabled]", error, context);
   }
-  Sentry.captureException(error, { extra: context });
 }
 
-export function captureMessage(
-  message: string,
-  level: Sentry.SeverityLevel = "info"
-) {
+export function captureMessage(message: string, level: SeverityLevel = "info") {
   if (__DEV__) {
-    console.debug(`[Sentry ${level}]`, message);
-    return;
+    console.debug(`[Sentry disabled ${level}]`, message);
   }
-  Sentry.captureMessage(message, level);
 }
 
-export function setUser(
-  user: { id: string; email?: string; username?: string } | null
-) {
-  Sentry.setUser(user);
+export function setUser(_user: {
+  id: string;
+  email?: string;
+  username?: string;
+} | null) {
+  // Disabled (see file header).
 }
 
 export function addBreadcrumb(
@@ -59,10 +41,7 @@ export function addBreadcrumb(
   message: string,
   data?: Record<string, unknown>
 ) {
-  Sentry.addBreadcrumb({
-    category,
-    message,
-    data,
-    level: "info",
-  });
+  if (__DEV__) {
+    console.debug(`[Sentry disabled] ${category}: ${message}`, data);
+  }
 }

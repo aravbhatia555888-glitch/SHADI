@@ -33,7 +33,16 @@ Text,
 TouchableOpacity,
 View,
 } from "react-native";
-import { captureRef } from "react-native-view-shot";
+async function loadCaptureRef(): Promise<
+  typeof import("react-native-view-shot")["captureRef"] | null
+> {
+  try {
+    const mod = await import("react-native-view-shot");
+    return mod.captureRef;
+  } catch {
+    return null;
+  }
+}
 
 export default function WeddingCardsScreen() {
   const router = useRouter();
@@ -61,6 +70,13 @@ export default function WeddingCardsScreen() {
       const target = cardRefs.current[card.id];
       if (!target) {
         useToastStore.getState().showToast("Card is not ready to share yet", "warning");
+        return;
+      }
+      const captureRef = await loadCaptureRef();
+      if (!captureRef) {
+        useToastStore
+          .getState()
+          .showToast("Sharing cards isn't available in Expo Go.", "warning");
         return;
       }
       const uri = await captureRef(target, {

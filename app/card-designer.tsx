@@ -41,7 +41,18 @@ TextInput,
 TouchableOpacity,
 View
 } from "react-native";
-import { captureRef } from "react-native-view-shot";
+// react-native-view-shot is not bundled in Expo Go; load it lazily so importing
+// this route can't crash the app. Returns null when unavailable.
+async function loadCaptureRef(): Promise<
+  typeof import("react-native-view-shot")["captureRef"] | null
+> {
+  try {
+    const mod = await import("react-native-view-shot");
+    return mod.captureRef;
+  } catch {
+    return null;
+  }
+}
 
 const { width: _SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -146,6 +157,13 @@ export default function CardDesignerScreen() {
   const handleSaveToGallery = async () => {
     try {
       setSaving(true);
+      const captureRef = await loadCaptureRef();
+      if (!captureRef) {
+        useToastStore
+          .getState()
+          .showToast("Saving cards isn't available in Expo Go.", "warning");
+        return;
+      }
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
         useToastStore.getState().showToast("Please allow access to save images.", "warning");
@@ -173,6 +191,13 @@ export default function CardDesignerScreen() {
   const handleShare = async () => {
     try {
       setSaving(true);
+      const captureRef = await loadCaptureRef();
+      if (!captureRef) {
+        useToastStore
+          .getState()
+          .showToast("Sharing cards isn't available in Expo Go.", "warning");
+        return;
+      }
       const uri = await captureRef(cardRef, {
         format: "png",
         quality: 1,
