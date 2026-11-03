@@ -1,4 +1,5 @@
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { FontWeight } from "@/types/styles";
 import { Stack,useRouter } from "expo-router";
@@ -56,6 +57,7 @@ const NOTIFICATIONS = [
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
 
   const markAllRead = () => {
@@ -98,7 +100,10 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      >
         {notifications.map((notification) => (
           <TouchableOpacity
             key={notification.id}

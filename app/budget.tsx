@@ -1,6 +1,7 @@
 import BudgetItem from "@/components/BudgetItem";
 import DatePicker from "@/components/DatePicker";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
 import { useWeddingStore } from "@/stores/wedding-store";
@@ -52,6 +53,7 @@ type SortOption = "category" | "amount" | "spent";
 export default function BudgetScreen() {
   const navigation = useNavigation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const {
     budgetItems,
@@ -373,7 +375,10 @@ export default function BudgetScreen() {
           </Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        >
           {loading && budgetItems.length === 0 ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={Colors.light.primary} />

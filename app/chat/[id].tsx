@@ -1,4 +1,5 @@
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/config/supabase";
 import type { ChatMessage } from "@/schemas/wedding";
 import { useAuthStore } from "@/stores/auth-store";
@@ -28,6 +29,7 @@ function formatMessageTime(dateStr: string): string {
 }
 
 export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
   const { id } = useLocalSearchParams();
@@ -204,7 +206,10 @@ export default function ChatScreen() {
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={[
+          styles.messagesContent,
+          { paddingBottom: insets.bottom + 16 },
+        ]}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: false })

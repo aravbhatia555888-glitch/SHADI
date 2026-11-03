@@ -1,4 +1,5 @@
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { useAIChatStore } from "@/stores/ai-chat-store";
 import { FontWeight } from "@/types/styles";
@@ -18,6 +19,7 @@ View,
 } from "react-native";
 
 export default function AIPlannerScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { messages, loading, sendMessage, clearChat } = useAIChatStore();
   const [input, setInput] = useState("");
@@ -99,7 +101,10 @@ export default function AIPlannerScreen() {
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={[
+          styles.messagesContent,
+          { paddingBottom: insets.bottom + 16 },
+        ]}
         showsVerticalScrollIndicator={false}
       />
 

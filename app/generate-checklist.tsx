@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { generateSmartChecklist } from "@/services/ai-checklist";
 import { useToastStore } from "@/stores/toast-store";
@@ -27,6 +28,7 @@ const CULTURES = [
 ];
 
 export default function GenerateChecklistScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { weddingDetails } = useWeddingStore();
   const [selectedCulture, setSelectedCulture] = useState("Hindu");
@@ -77,7 +79,11 @@ export default function GenerateChecklistScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.iconContainer}>
           <Wand2 size={48} color={Colors.light.primary} />
         </View>

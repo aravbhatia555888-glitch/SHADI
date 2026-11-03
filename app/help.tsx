@@ -1,4 +1,5 @@
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { FontWeight } from "@/types/styles";
 import { Stack,useRouter } from "expo-router";
@@ -66,6 +67,7 @@ const CONTACT_OPTIONS = [
 
 export default function HelpScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
@@ -82,7 +84,10 @@ export default function HelpScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      >
         {/* Contact Options */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Us</Text>

@@ -2,6 +2,7 @@ import Button from "@/components/Button";
 import WeddingCardRenderer from "@/components/WeddingCardRenderer";
 import Colors from "@/constants/colors";
 import Constants from "expo-constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { AnalyticsEvents,trackEvent } from "@/services/analytics";
 import { useToastStore } from "@/stores/toast-store";
@@ -69,6 +70,7 @@ async function loadMediaLibrary(): Promise<
 const { width: _SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function CardDesignerScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { templateId, cardId } = useLocalSearchParams<{
     templateId?: string;
@@ -377,7 +379,10 @@ export default function CardDesignerScreen() {
             ))}
           </ScrollView>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          >
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Couple Names</Text>
               <View style={styles.rowInputs}>

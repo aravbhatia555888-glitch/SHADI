@@ -5,6 +5,7 @@ import RequestQuoteModal,{ QuoteRequest } from "@/components/RequestQuoteModal";
 import ReviewsTab from "@/components/ReviewsTab";
 import { supabase } from "@/config/supabase";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import type { Review,ReviewInput } from "@/schemas/wedding";
 import { AnalyticsEvents,trackEvent } from "@/services/analytics";
@@ -41,6 +42,7 @@ View,
 } from "react-native";
 
 export default function VendorDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const {
@@ -538,7 +540,10 @@ export default function VendorDetailScreen() {
         }}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      >
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: vendor.gallery[currentImageIndex] }}

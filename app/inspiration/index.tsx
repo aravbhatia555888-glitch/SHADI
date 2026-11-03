@@ -4,6 +4,7 @@ import Typography from "@/constants/typography";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
 import { Stack,useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 Bookmark,
 ChevronLeft,
@@ -185,6 +186,7 @@ const CATEGORIES = [
 
 export default function InspirationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { favoriteArticles, toggleFavoriteArticle } = useWeddingStore();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -392,7 +394,11 @@ export default function InspirationScreen() {
         data={displayedArticles}
         renderItem={renderArticle}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.articlesList}
+        style={styles.list}
+        contentContainerStyle={[
+          styles.articlesList,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
@@ -429,6 +435,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  list: {
+    flex: 1,
   },
   backButton: {
     marginLeft: 8,

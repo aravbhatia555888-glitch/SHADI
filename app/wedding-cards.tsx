@@ -1,6 +1,7 @@
 import Button from "@/components/Button";
 import WeddingCardRenderer from "@/components/WeddingCardRenderer";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import {
 deleteSavedCard,
@@ -45,6 +46,7 @@ async function loadCaptureRef(): Promise<
 }
 
 export default function WeddingCardsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [savedCards, setSavedCards] = useState<SavedWeddingCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +228,10 @@ export default function WeddingCardsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      >
         {/* Create New Card CTA */}
         <TouchableOpacity
           style={styles.createCardBanner}

@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { FontWeight } from "@/types/styles";
 import { Stack,useLocalSearchParams,useRouter } from "expo-router";
@@ -21,6 +22,7 @@ View
 } from "react-native";
 
 export default function BookingConfirmationScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -31,7 +33,12 @@ export default function BookingConfirmationScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + 24 },
+          ]}
+        >
           {/* Success Icon */}
           <View style={styles.successIcon}>
             <CheckCircle

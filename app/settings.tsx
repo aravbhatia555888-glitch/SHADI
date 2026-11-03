@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToastStore } from "@/stores/toast-store";
@@ -23,6 +24,7 @@ View,
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { changePassword, deleteAccount, loading } = useAuthStore();
 
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
@@ -120,7 +122,10 @@ export default function SettingsScreen() {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
       >
         {/* Privacy */}
         <View style={styles.section}>

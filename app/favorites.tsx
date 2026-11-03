@@ -1,5 +1,6 @@
 import VendorCard from "@/components/VendorCard";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import type { Vendor } from "@/schemas/wedding";
 import { useAuthStore } from "@/stores/auth-store";
@@ -92,6 +93,7 @@ const INSPIRATION_ARTICLES: InspirationArticle[] = [
 ];
 
 export default function FavoritesScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
   const { vendors, favoriteVendors, favoriteArticles, loading, error, initialize } =
@@ -236,7 +238,11 @@ export default function FavoritesScreen() {
       </View>
 
       {activeTab === "vendors" && favoriteVendorsByCategory.length > 0 ? (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.statsContainer}>
             <Text style={styles.statsText}>
               {allFavoriteVendors.length} favorite{" "}
@@ -321,7 +327,11 @@ export default function FavoritesScreen() {
       ) : null}
 
       {activeTab === "articles" && allFavoriteArticles.length > 0 ? (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.statsContainer}>
             <Text style={styles.statsText}>
               {allFavoriteArticles.length} saved{" "}

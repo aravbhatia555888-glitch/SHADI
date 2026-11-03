@@ -3,6 +3,7 @@ import Typography from "@/constants/typography";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
 import { Stack,useLocalSearchParams,useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 ChevronLeft,
 ChevronRight,
@@ -270,6 +271,7 @@ Research the climate and have contingency plans for weather. Many destinations h
 
 export default function ArticleDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { articleId, category } = useLocalSearchParams<{
     articleId: string;
     category?: string;
@@ -436,6 +438,7 @@ export default function ArticleDetailScreen() {
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Image */}

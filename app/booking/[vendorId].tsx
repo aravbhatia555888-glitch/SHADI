@@ -1,6 +1,7 @@
 import Button from "@/components/Button";
 import PaymentScreen from "@/components/PaymentScreen";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { useAuthStore } from "@/stores/auth-store";
 import { useBookingStore } from "@/stores/booking-store";
@@ -33,6 +34,7 @@ View
 const STANDARD_ADVANCE_PERCENT = 25;
 
 export default function BookingScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { vendorId, packageId } = useLocalSearchParams();
   const { vendors, loading, error, loadVendors } = useWeddingStore();
@@ -181,7 +183,11 @@ export default function BookingScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Vendor Info */}
           <View style={styles.vendorInfo}>
             <Text style={styles.vendorName}>{vendor.name}</Text>
