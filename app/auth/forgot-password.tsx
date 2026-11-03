@@ -1,19 +1,17 @@
+import AuthFooter from "@/components/auth/AuthFooter";
+import AuthHeader from "@/components/auth/AuthHeader";
+import AuthScreenContainer from "@/components/auth/AuthScreenContainer";
+import AuthTextInput from "@/components/auth/AuthTextInput";
 import Button from "@/components/Button";
 import Colors from "@/constants/colors";
+import { Spacing } from "@/constants/layout";
 import Typography from "@/constants/typography";
 import { useAuthStore } from "@/stores/auth-store";
+import { FontWeight } from "@/types/styles";
 import { useRouter } from "expo-router";
+import { Mail } from "lucide-react-native";
 import { useState } from "react";
-import {
-KeyboardAvoidingView,
-Platform,
-ScrollView,
-StyleSheet,
-Text,
-TextInput,
-TouchableOpacity,
-View,
-} from "react-native";
+import { StyleSheet,Text,TouchableOpacity } from "react-native";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -35,187 +33,103 @@ export default function ForgotPasswordScreen() {
       if (result.success) {
         setSuccess(true);
       }
-      // Error handling is done by the store
-    } catch (error) {
-      if (__DEV__) console.error("Reset password error:", error);
+    } catch (err) {
+      if (__DEV__) console.error("Reset password error:", err);
     }
   };
 
   if (success) {
     return (
-      <View style={styles.container}>
-        <View style={styles.successContainer}>
-          <Text style={styles.title}>Check Your Email</Text>
-          <Text style={styles.message}>
-            We've sent password reset instructions to your email address. Please
-            check your inbox.
-          </Text>
-          <Button
-            title="Back to Login"
-            onPress={() => router.push("/auth/login")}
-            style={styles.button}
-          />
-        </View>
-      </View>
+      <AuthScreenContainer center>
+        <AuthHeader
+          title="Check Your Email"
+          subtitle="We've sent password reset instructions to your email address. Please check your inbox."
+        />
+        <Button
+          title="Back to Login"
+          onPress={() => router.replace("/auth/login")}
+          size="large"
+          fullWidth
+        />
+      </AuthScreenContainer>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>
-            Enter your email address and we'll send you instructions to reset
-            your password.
-          </Text>
-        </View>
+    <AuthScreenContainer>
+      <AuthHeader
+        align="left"
+        title="Reset Password"
+        subtitle="Enter your email address and we'll send you instructions to reset your password."
+      />
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (validationError) setValidationError(null);
-              }}
-              placeholder="Enter your email"
-              placeholderTextColor={Colors.light.textLight}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              textContentType="emailAddress"
-              returnKeyType="send"
-              onSubmitEditing={handleResetPassword}
-              accessibilityLabel="Email"
-            />
-            {validationError && (
-              <Text
-                style={styles.fieldError}
-                accessibilityRole="alert"
-                accessibilityLiveRegion="polite"
-              >
-                {validationError}
-              </Text>
-            )}
-          </View>
+      <AuthTextInput
+        label="Email"
+        leftAccessory={<Mail size={20} color={Colors.light.textLight} />}
+        value={email}
+        onChangeText={(text) => {
+          setEmail(text);
+          if (validationError) setValidationError(null);
+        }}
+        placeholder="Enter your email"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="send"
+        onSubmitEditing={handleResetPassword}
+        accessibilityLabel="Email"
+        error={validationError}
+      />
 
-          {error && (
-            <Text
-              style={styles.errorText}
-              accessibilityRole="alert"
-              accessibilityLiveRegion="polite"
-            >
-              {error}
-            </Text>
-          )}
+      {error ? (
+        <Text
+          style={styles.errorText}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {error}
+        </Text>
+      ) : null}
 
-          <Button
-            title="Send Reset Link"
-            onPress={handleResetPassword}
-            loading={loading}
-            style={styles.button}
-          />
+      <Button
+        title="Send Reset Link"
+        onPress={handleResetPassword}
+        loading={loading}
+        size="large"
+        fullWidth
+        style={styles.primaryButton}
+      />
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/auth/login")}
-            accessibilityRole="button"
-            accessibilityLabel="Back to login"
-          >
-            <Text style={styles.backButtonText}>Back to Login</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <AuthFooter>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push("/auth/login")}
+          accessibilityRole="button"
+          accessibilityLabel="Back to login"
+        >
+          <Text style={styles.backButtonText}>Back to Login</Text>
+        </TouchableOpacity>
+      </AuthFooter>
+    </AuthScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    width: "100%",
-    maxWidth: 440,
-    alignSelf: "center",
-    padding: 24,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: Typography.fontSizes.xxl,
-    fontWeight: "700",
-    color: Colors.light.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: Typography.fontSizes.md,
-    color: Colors.light.textLight,
-  },
-  form: {
-    gap: 20,
-  },
-  inputContainer: {
-    gap: 8,
-  },
-  label: {
-    fontSize: Typography.fontSizes.sm,
-    fontWeight: "500",
-    color: Colors.light.text,
-  },
-  input: {
-    height: 48,
-    backgroundColor: Colors.light.backgroundAlt,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.inputBorder,
-    paddingHorizontal: 16,
-    fontSize: Typography.fontSizes.md,
-    color: Colors.light.text,
-  },
   errorText: {
+    marginTop: Spacing.md,
     fontSize: Typography.fontSizes.sm,
     color: Colors.light.error,
-    textAlign: "center",
   },
-  fieldError: {
-    fontSize: Typography.fontSizes.xs,
-    color: Colors.light.error,
-  },
-  button: {
-    marginTop: 8,
+  primaryButton: {
+    marginTop: Spacing.xxl,
   },
   backButton: {
-    alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: Spacing.sm,
   },
   backButtonText: {
     fontSize: Typography.fontSizes.sm,
     color: Colors.light.primary,
-    fontWeight: "500",
-  },
-  successContainer: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  message: {
-    fontSize: Typography.fontSizes.md,
-    color: Colors.light.textLight,
-    textAlign: "center",
-    marginVertical: 16,
+    fontWeight: "600" as FontWeight,
   },
 });

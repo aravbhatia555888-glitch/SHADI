@@ -1,9 +1,13 @@
 import Colors from '@/constants/colors';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 export default function AuthLayout() {
   return (
-    <Stack
+    <>
+      {/* Cream background → dark status-bar icons for contrast. */}
+      <StatusBar style="dark" />
+      <Stack
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: Colors.light.background },
@@ -27,6 +31,7 @@ export default function AuthLayout() {
           title: 'Reset Password',
         }}
       />
-    </Stack>
+      </Stack>
+    </>
   );
 } 

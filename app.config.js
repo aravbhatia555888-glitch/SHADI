@@ -24,7 +24,8 @@ module.exports = {
       backgroundColor: "#ffffff"
     },
     package: "com.shaadibazaar.app",
-    versionCode: 1
+    versionCode: 1,
+    softwareKeyboardLayoutMode: "resize"
   },
   web: {
     favicon: "./public/favicon.ico"
