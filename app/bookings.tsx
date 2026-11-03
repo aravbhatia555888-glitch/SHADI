@@ -170,7 +170,7 @@ export default function BookingsScreen() {
         options={{
           title: "My Bookings",
           headerBackTitle: "Back",
-          headerTintColor: Colors.light.primary,
+          headerTintColor: Colors.light.background,
         }}
       />
       <View style={[styles.container, { paddingBottom: insets.bottom }]}>

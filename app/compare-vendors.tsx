@@ -1,5 +1,6 @@
 import VendorCard from "@/components/VendorCard";
 import Colors from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Typography from "@/constants/typography";
 import { useWeddingStore } from "@/stores/wedding-store";
 import { FontWeight } from "@/types/styles";
@@ -23,6 +24,7 @@ View,
 } from "react-native";
 
 export default function CompareVendorsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { ids } = useLocalSearchParams<{ ids: string }>();
   const { vendors } = useWeddingStore();
@@ -91,7 +93,7 @@ export default function CompareVendorsScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
